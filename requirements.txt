@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+requests
+pydantic>=2.9
+python-dotenv

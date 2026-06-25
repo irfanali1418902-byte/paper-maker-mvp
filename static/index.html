@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>AII Smart Paper Maker — Phase 1</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #222; }
+  h1 { font-size: 22px; }
+  p.sub { color: #666; font-size: 14px; }
+  label { display: block; margin-top: 14px; font-weight: 600; font-size: 14px; }
+  input, select { width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+  button { margin-top: 20px; margin-right: 10px; padding: 10px 18px; background: #1d6e56; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+  button:hover { background: #155340; }
+  .question-card { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-top: 14px; }
+  .ur { direction: rtl; font-family: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", serif; font-size: 18px; margin-top: 8px; line-height: 1.8; }
+  .meta { font-size: 12px; color: #888; margin-top: 8px; }
+  #status { margin-top: 14px; font-size: 14px; color: #555; min-height: 20px; }
+  ul { margin-top: 8px; padding-left: 20px; }
+</style>
+</head>
+<body>
+  <h1>AII Smart Paper Maker — Phase 1 (MVP)</h1>
+  <p class="sub">AI se bilingual Bloom-tagged questions generate karen, phir balanced paper assemble karen.</p>
+
+  <details style="border:1px solid #ddd;border-radius:8px;padding:10px 14px;margin-top:10px;background:#fffaf0">
+    <summary style="cursor:pointer;font-weight:600">🏫 School Settings (Letterhead / Logo) — print ke liye</summary>
+    <div style="margin-top:12px">
+      <label style="margin-top:0">Logo upload karen</label>
+      <input type="file" id="logoFile" accept="image/*" onchange="onLogoSelected(event)" />
+      <img id="logoPreview" style="display:none;width:60px;height:60px;object-fit:contain;margin-top:8px;border:1px solid #ddd;border-radius:8px" />
+
+      <label>School/Institute name (English)</label>
+      <input id="schoolNameEn" placeholder="e.g. Ameen Islamic Institute" />
+
+      <label>School/Institute name (Urdu)</label>
+      <input id="schoolNameUr" placeholder="e.g. امین اسلامک انسٹیٹیوٹ" style="direction:rtl;font-family:'Noto Nastaliq Urdu',serif" />
+
+      <label>Address</label>
+      <input id="schoolAddress" placeholder="e.g. Swat, Khyber Pakhtunkhwa" />
+
+      <label>Accent colour (letterhead line)</label>
+      <input id="accentColor" type="color" value="#0e4d3c" style="height:38px;cursor:pointer" />
+
+      <button onclick="saveSchoolSettings()" style="margin-top:14px">Settings save karen</button>
+      <span id="settingsStatus" style="margin-left:10px;font-size:13px;color:#555"></span>
+    </div>
+  </details>
+
+  <div style="border:1px solid #ddd;border-radius:8px;padding:14px;margin-top:10px;background:#f7faf9">
+    <label style="margin-top:0">Class/Grade select karen</label>
+    <select id="syllabusGrade" onchange="onGradeChange()">
+      <option value="">-- Loading classes... --</option>
+    </select>
+
+    <label>Ya syllabus se topic select karen</label>
+    <select id="syllabusTopic" onchange="onSyllabusTopicChange()">
+      <option value="">-- Pehle class select karen --</option>
+    </select>
+  </div>
+
+  <label>Subject</label>
+  <input id="subject" placeholder="e.g. Mathematics" value="Mathematics" />
+
+  <label>Topic</label>
+  <input id="topic" placeholder="e.g. Fractions" value="Fractions" />
+
+  <label>Total questions</label>
+  <input id="totalQuestions" type="number" value="10" />
+
+  <label>Bloom distribution</label>
+  <select id="bloomDist">
+    <option value="balanced">Balanced</option>
+    <option value="foundational">Foundational</option>
+    <option value="advanced">Advanced</option>
+  </select>
+
+  <label>Difficulty</label>
+  <select id="difficulty">
+    <option value="easy">Easy</option>
+    <option value="medium" selected>Medium</option>
+    <option value="hard">Hard</option>
+  </select>
+
+  <button onclick="generateQuestions()">1. Generate questions (AI)</button>
+  <button onclick="buildPaper()">2. Build paper from bank</button>
+  <button id="printBtn" style="display:none;background:#a9722f" onclick="openPrintView()">3. Print / PDF dekhen</button>
+
+  <div id="status"></div>
+  <div id="results"></div>
+
+<script>
+let logoBase64 = null;
+let currentPaperId = null;
+
+function onLogoSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    logoBase64 = reader.result;
+    const img = document.getElementById('logoPreview');
+    img.src = logoBase64;
+    img.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveSchoolSettings() {
+  const body = {
+    school_name: val('schoolNameEn'),
+    school_name_ur: val('schoolNameUr'),
+    address: val('schoolAddress'),
+    logo_base64: logoBase64,
+    accent_color: val('accentColor'),
+  };
+  try {
+    const res = await fetch('/api/school-settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error('Save failed');
+    document.getElementById('settingsStatus').textContent = '✅ Saved';
+  } catch (e) {
+    document.getElementById('settingsStatus').textContent = 'Error: ' + e.message;
+  }
+}
+
+async function loadSchoolSettings() {
+  try {
+    const res = await fetch('/api/school-settings');
+    const s = await res.json();
+    document.getElementById('schoolNameEn').value = s.school_name || '';
+    document.getElementById('schoolNameUr').value = s.school_name_ur || '';
+    document.getElementById('schoolAddress').value = s.address || '';
+    document.getElementById('accentColor').value = s.accent_color || '#0e4d3c';
+    if (s.logo_base64) {
+      logoBase64 = s.logo_base64;
+      const img = document.getElementById('logoPreview');
+      img.src = logoBase64;
+      img.style.display = 'block';
+    }
+  } catch (e) {
+    console.error('Settings load failed:', e);
+  }
+}
+
+function openPrintView() {
+  if (!currentPaperId) return;
+  window.open(`/print.html?paper_id=${currentPaperId}`, '_blank');
+}
+
+loadSchoolSettings();
+
+async function loadSyllabusGrades() {
+  try {
+    const res = await fetch('/api/syllabus-grades');
+    const grades = await res.json();
+    const select = document.getElementById('syllabusGrade');
+    select.innerHTML = '<option value="">-- Manual entry (upar wale fields use karen) --</option>';
+    grades.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = JSON.stringify({subject: g.subject, grade: g.grade});
+      opt.textContent = `${g.subject} — ${g.grade}`;
+      select.appendChild(opt);
+    });
+  } catch (e) {
+    console.error('Syllabus grades load failed:', e);
+  }
+}
+
+async function onGradeChange() {
+  const gradeSelect = document.getElementById('syllabusGrade');
+  const topicSelect = document.getElementById('syllabusTopic');
+  topicSelect.innerHTML = '<option value="">-- Loading topics... --</option>';
+  selectedSyllabusTopicId = null;
+
+  if (!gradeSelect.value) {
+    topicSelect.innerHTML = '<option value="">-- Pehle class select karen --</option>';
+    return;
+  }
+
+  const { subject, grade } = JSON.parse(gradeSelect.value);
+  document.getElementById('subject').value = subject;
+
+  const res = await fetch(`/api/syllabus-topics?subject=${encodeURIComponent(subject)}&grade=${encodeURIComponent(grade)}`);
+  const topics = await res.json();
+  topicSelect.innerHTML = '<option value="">-- Manual entry (upar wale fields use karen) --</option>';
+  topics.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t.id;
+    opt.textContent = `p.${t.page_no} — ${t.subtopic_title} (${t.activity_type})`;
+    opt.dataset.subject = t.subject;
+    opt.dataset.topic = t.subtopic_title;
+    opt.dataset.difficulty = t.suggested_difficulty;
+    topicSelect.appendChild(opt);
+  });
+}
+
+function onSyllabusTopicChange() {
+  const select = document.getElementById('syllabusTopic');
+  const opt = select.options[select.selectedIndex];
+  if (!opt.value) {
+    selectedSyllabusTopicId = null;
+    return;
+  }
+  selectedSyllabusTopicId = opt.value;
+  document.getElementById('subject').value = opt.dataset.subject;
+  document.getElementById('topic').value = opt.dataset.topic;
+  document.getElementById('difficulty').value = opt.dataset.difficulty;
+}
+
+loadSyllabusGrades();
+
+async function generateQuestions() {
+  setStatus("AI se questions generate ho rahe hain... (kuch seconds lagenge)");
+  const body = {
+    subject: val('subject'),
+    topic: val('topic'),
+    syllabus_topic_id: selectedSyllabusTopicId,
+    total_questions: parseInt(val('totalQuestions')),
+    bloom_distribution: val('bloomDist'),
+    question_types: ['multiple-choice'],
+    difficulty: val('difficulty')
+  };
+  try {
+    const res = await fetch('/api/generate-questions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Error');
+    setStatus(`${data.saved_count} questions question bank mein save ho gaye. Ab "Build paper" dabayen.`);
+  } catch (e) {
+    setStatus('Error: ' + e.message);
+  }
+}
+
+async function buildPaper() {
+  setStatus("Paper assemble ho raha hai...");
+  const body = {
+    subject: val('subject'),
+    total_questions: parseInt(val('totalQuestions')),
+    bloom_distribution: val('bloomDist'),
+    difficulty: val('difficulty')
+  };
+  try {
+    const res = await fetch('/api/generate-paper', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Error');
+    currentPaperId = data.paper_id;
+    document.getElementById('printBtn').style.display = 'inline-block';
+    setStatus(`Paper ban gaya — Total marks: ${data.total_marks}`);
+    renderQuestions(data.questions);
+  } catch (e) {
+    setStatus('Error: ' + e.message);
+  }
+}
+
+function renderQuestions(questions) {
+  const container = document.getElementById('results');
+  container.innerHTML = '';
+  questions.forEach((q, i) => {
+    const optsEn = JSON.parse(q.options_en || '[]');
+    const optsUr = JSON.parse(q.options_ur || '[]');
+    const visual = (q.visual_emoji && q.visual_count) ? `<div style="font-size:22px;letter-spacing:4px;margin-top:6px">${q.visual_emoji.repeat(q.visual_count)}</div>` : '';
+    const card = document.createElement('div');
+    card.className = 'question-card';
+    card.innerHTML = `
+      <div><strong>Q${i + 1}.</strong> ${q.question_en || ''}</div>
+      <div class="ur">${q.question_ur || ''}</div>
+      ${visual}
+      <ul>${optsEn.map((o, idx) => `<li>${o}${optsUr[idx] ? ' — <span class="ur" style="font-size:15px">' + optsUr[idx] + '</span>' : ''}</li>`).join('')}</ul>
+      <div class="meta">Bloom: ${q.bloom_level} | Difficulty: ${q.difficulty} | Marks: ${q.marks}</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function val(id) { return document.getElementById(id).value; }
+function setStatus(msg) { document.getElementById('status').textContent = msg; }
+</script>
+</body>
+</html>
