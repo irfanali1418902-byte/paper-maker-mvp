@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(python -c \"from database import init_db; init_db\\(\\); print\\('init_db OK'\\)\")",
-      "Bash(python -c \"import sqlite3; conn = sqlite3.connect\\('paper_maker.db'\\); cur = conn.cursor\\(\\); print\\('questions cols:', [r[1] for r in cur.execute\\('PRAGMA table_info\\(questions\\)'\\).fetchall\\(\\)]\\); print\\('tables:', [r[0] for r in cur.execute\\(\\\\\"SELECT name FROM sqlite_master WHERE type='table'\\\\\"\\).fetchall\\(\\)]\\)\")"
-    ]
-  }
-}
