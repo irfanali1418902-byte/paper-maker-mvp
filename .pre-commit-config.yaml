@@ -1,0 +1,19 @@
+# Pre-commit hooks. Install once per clone with:
+#   pre-commit install
+# Hooks run on `git commit` against staged files only — formatting/linting
+# violations block the commit.
+#
+# To run on the full tree manually:
+#   pre-commit run --all-files
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.20
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 26.5.1
+    hooks:
+      - id: black

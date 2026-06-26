@@ -1,0 +1,24 @@
+# Tool config lives here so ruff and black both find it automatically.
+# This file is intentionally minimal — no build-system / project metadata,
+# since paper-maker-mvp ships as a directory, not as a pip-installable
+# package.
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+# Sensible defaults:
+#   E, W  -- pycodestyle errors/warnings
+#   F     -- pyflakes (unused imports, undefined names)
+#   I     -- isort (import ordering)
+#   B     -- flake8-bugbear (common Python pitfalls)
+select = ["E", "F", "I", "W", "B"]
+
+# E501 (line too long) is owned by Black — disabling here avoids two
+# tools fighting over the same verdict.
+ignore = ["E501"]
