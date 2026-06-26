@@ -6,10 +6,18 @@ balanced exam paper assemble karna.
 
 ## Files
 
-- `database.py` — SQLite setup (questions + papers tables)
-- `bloom_engine.py` — Bloom's Taxonomy distribution % aur marks calculation
-- `ai_generator.py` — Claude API se bilingual questions generate karne ka prompt + logic
-- `main.py` — FastAPI app (sab API endpoints)
+Code layered structure mein hai (routes -> services -> repositories -> core).
+Full rules `ARCHITECTURE.md` aur `CLAUDE.md` mein hain.
+
+- `app/main.py` — FastAPI app entry point (routers mount + static + `init_db`)
+- `app/api/` — HTTP route handlers (`questions`, `papers`, `syllabus`, `school_settings`)
+- `app/services/` — Business logic: Bloom distribution + marks (`bloom_service`),
+  AI provider (`ai_service`), orchestration (`question_service`, `paper_service`,
+  `syllabus_service`, `settings_service`)
+- `app/repositories/` — SQLite access — sirf yahan SQL strings hain
+- `app/core/database.py` — Connection factory + schema bootstrap + migrations
+- `app/models/requests.py` — Pydantic request shapes
+- `import_syllabus.py` — CSV se syllabus topics import karne wala CLI
 - `static/index.html` — Testing ke liye simple bilingual frontend
 
 ## Setup (apne computer/VPS par)
@@ -21,33 +29,31 @@ balanced exam paper assemble karna.
    pip install -r requirements.txt
    ```
 
-3. `.env.example` ko `.env` rename karen.
+3. Project root mein `.env` file banayen aur ek API key add karen:
 
    **FREE option (Gemini)** — testing ke liye recommended, koi card nahi chahiye:
    - [aistudio.google.com](https://aistudio.google.com) par Google account se login karen
    - "Get API key" par click kar ke key generate karen
-   - `.env` file mein `GEMINI_API_KEY=` ke aage paste karen
+   - `.env` mein ye line dalen:
+     ```
+     GEMINI_API_KEY=apni-key-yahan
+     ```
 
    **PAID option (Claude)** — jab production/AII deployment ke liye behtar
    quality chahiye ho:
-   - console.anthropic.com se key len, `.env` mein `ANTHROPIC_API_KEY=` ke
-     aage paste karen
+   - console.anthropic.com se key len, `.env` mein dalen:
+     ```
+     ANTHROPIC_API_KEY=sk-ant-...
+     ```
    - Agar ye key bhi set hai to code automatically isi ko use karega
      (Gemini ko ignore kar dega)
 
-   Phir terminal mein jo bhi key use kar rahe hain wo load karen
-   (Windows PowerShell):
-   ```
-   $env:GEMINI_API_KEY="apni-gemini-key"
-   ```
-   ya
-   ```
-   $env:ANTHROPIC_API_KEY="sk-ant-..."
-   ```
+   App startup par `python-dotenv` `.env` ko auto-load kar leta hai —
+   manually environment variables set karne ki zaroorat nahi.
 
 4. Server chalayen:
    ```
-   uvicorn main:app --reload --port 8000
+   uvicorn app.main:app --reload --port 8000
    ```
 
 5. Browser mein kholen: http://localhost:8000

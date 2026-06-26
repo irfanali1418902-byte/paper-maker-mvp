@@ -36,7 +36,7 @@ means tomorrow a route handler will do anything. Hence this doc.
                                   │ JSON over HTTP
                                   ▼
    ┌────────────────────────────────────────────────────────────┐
-   │  ROUTES        (app/routes/*.py)                           │
+   │  ROUTES        (app/api/*.py)                              │
    │  FastAPI handlers. Parse, validate, return JSON. Nothing   │
    │  else.                                                     │
    └─────────────────────┬──────────────────────────────────────┘
@@ -57,7 +57,7 @@ means tomorrow a route handler will do anything. Hence this doc.
                          │ sqlite3 connection
                          ▼
    ┌────────────────────────────────────────────────────────────┐
-   │  DATABASE      (app/database/*.py)                         │
+   │  DATABASE      (app/core/*.py)                             │
    │  Connection factory, schema bootstrap, migrations. SQLite  │
    │  today; swappable for Postgres tomorrow without touching   │
    │  routes or services.                                       │
@@ -72,7 +72,7 @@ never import anything from the project — it stands alone at the bottom.
 
 ## 3. Layer responsibilities — what each layer does and does NOT do
 
-### 3.1 Routes (`app/routes/`)
+### 3.1 Routes (`app/api/`)
 
 **Does:**
 - Define FastAPI endpoint paths and HTTP methods.
@@ -132,7 +132,7 @@ A service should be testable with `pytest` without spinning up a web server.
 If a repository method needs data from another table, the **service** joins
 the calls — not the repository.
 
-### 3.4 Database (`app/database/`)
+### 3.4 Database (`app/core/`)
 
 **Does:**
 - Provide `get_connection()`.
@@ -176,7 +176,7 @@ fix is to restructure the change, not to make an exception.
 
 5. **Dependencies point down.** Lower layers do not import upper layers.
    `app/repositories/questions_repository.py` may not import anything from
-   `app/services/` or `app/routes/`. If you feel the urge to do this, you
+   `app/services/` or `app/api/`. If you feel the urge to do this, you
    have a design problem, not an import problem.
 
 6. **One service call per route.** A route should not orchestrate two
@@ -193,19 +193,19 @@ fix is to restructure the change, not to make an exception.
 
 | Today | Tomorrow | Notes |
 |---|---|---|
-| `main.py` (app + routes + SQL) | `app/main.py` (app object only) + `app/routes/{questions,papers,syllabus,settings}.py` | Routes split by resource. `main.py` mounts routers and runs `init_db()`. |
+| `main.py` (app + routes + SQL) | `app/main.py` (app object only) + `app/api/{questions,papers,syllabus,school_settings}.py` | Routes split by resource. `app/main.py` mounts routers and runs `init_db()`. |
 | Pydantic classes inside `main.py` | `app/models/requests.py`, `app/models/responses.py` | Shared between routes and services. |
 | `bloom_engine.py` | `app/services/bloom_service.py` | Already pure — moves wholesale. |
 | `ai_generator.py` | `app/services/ai_service.py` | Already isolated — moves wholesale. Provider switching stays inside. |
 | Inline SQL in `main.py` | `app/repositories/{questions,papers,syllabus,settings}_repository.py` | One repo per table. Each method returns `dict` or `list[dict]`. |
-| `database.py` | `app/database/connection.py` + `app/database/schema.py` | Split: connection factory vs. schema/migrations. |
+| `database.py` | `app/core/database.py` | Connection factory + schema bootstrap + idempotent migrations in one module (split into separate files when migrations grow non-trivial). |
 | `import_syllabus.py` | `scripts/import_syllabus.py` + reuses `app/services/syllabus_service.py` | CLI calls a service; the service calls the repository. No raw SQL in the script. |
 
 ---
 
 ## 6. Worked example — `/api/generate-questions` after the refactor
 
-**Route** (`app/routes/questions.py`) — HTTP only:
+**Route** (`app/api/questions.py`) — HTTP only:
 
 ```python
 @router.post("/api/generate-questions")
