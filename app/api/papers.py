@@ -14,7 +14,12 @@ def generate_paper(req: GeneratePaperRequest):
     """Question bank se Bloom + difficulty distribution ke hisaab se balanced
     paper assemble karta hai. Least-used questions ko priority deta hai
     (taake repetition kam ho)."""
-    result = paper_service.assemble_balanced_paper(req)
+    try:
+        result = paper_service.assemble_balanced_paper(req)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Paper assemble fail hui (DB error): {e}"
+        ) from e
     if result is None:
         raise HTTPException(
             status_code=404,
@@ -25,7 +30,10 @@ def generate_paper(req: GeneratePaperRequest):
 
 @router.get("/api/paper/{paper_id}", response_model=PaperResponse)
 def get_paper(paper_id: str):
-    result = paper_service.get_paper_with_questions(paper_id)
+    try:
+        result = paper_service.get_paper_with_questions(paper_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Paper fetch fail hui (DB error): {e}") from e
     if result is None:
         raise HTTPException(status_code=404, detail="Paper nahi mila.")
     return result

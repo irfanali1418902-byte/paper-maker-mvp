@@ -1,6 +1,7 @@
 """Syllabus topic listing + CSV import."""
 
 import csv
+import sqlite3
 import uuid
 
 from app.repositories import syllabus_repository
@@ -62,7 +63,11 @@ def import_from_csv(csv_path: str, subject: str, grade: str) -> int:
                     learning_outcome=row.get("learning_outcome_snippet", ""),
                 )
                 inserted += 1
-            except Exception as e:
-                # Duplicate (UNIQUE constraint) ya koi aur row-level issue -- skip kar ke aage badho
-                print(f"Skipped row (subtopic: {row.get('subtopic_title')}): {e}")
+            except sqlite3.IntegrityError as e:
+                # UNIQUE-constraint duplicate row — expected on re-imports, skip
+                # quietly and continue. Other failures (missing CSV column,
+                # non-int unit_no, etc.) are NOT caught here on purpose: they
+                # represent operator-visible CSV problems and should crash
+                # loudly so they get fixed rather than silently swallowed.
+                print(f"Skipped duplicate row (subtopic: {row.get('subtopic_title')}): {e}")
     return inserted
