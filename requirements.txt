@@ -7,3 +7,4 @@ pytest
 ruff
 black
 pre-commit
+pandas
