@@ -110,5 +110,31 @@ def init_db() -> None:
         )
         """)
 
+    # Phase 2 — student performance analyzer. Teacher ek paper ka results
+    # sheet (CSV ya similar) upload karte hain; har upload ek row, aur uske
+    # andar har student-question pair ki marks_obtained ek alag row.
+    # FK declarations documentation ke liye hain — SQLite enforcement default
+    # off hai (no PRAGMA foreign_keys = ON), to existing inserts ki behavior
+    # nahi badalti.
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS result_uploads (
+            id TEXT PRIMARY KEY,
+            paper_id TEXT NOT NULL REFERENCES papers(id),
+            filename TEXT NOT NULL,
+            uploaded_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS student_question_results (
+            id TEXT PRIMARY KEY,
+            result_upload_id TEXT NOT NULL REFERENCES result_uploads(id),
+            roll_no TEXT NOT NULL,
+            student_name TEXT,
+            question_id TEXT NOT NULL REFERENCES questions(id),
+            marks_obtained INTEGER NOT NULL
+        )
+        """)
+
     conn.commit()
     conn.close()
