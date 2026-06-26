@@ -1,14 +1,15 @@
 """HTTP routes for paper assembly and retrieval."""
 from fastapi import APIRouter, HTTPException
 
-from app.models.requests import PaperRequest
+from app.models.requests import GeneratePaperRequest
+from app.models.responses import GeneratePaperResponse, PaperResponse
 from app.services import paper_service
 
 router = APIRouter()
 
 
-@router.post("/api/generate-paper")
-def generate_paper(req: PaperRequest):
+@router.post("/api/generate-paper", response_model=GeneratePaperResponse)
+def generate_paper(req: GeneratePaperRequest):
     """Question bank se Bloom + difficulty distribution ke hisaab se balanced
     paper assemble karta hai. Least-used questions ko priority deta hai
     (taake repetition kam ho)."""
@@ -21,7 +22,7 @@ def generate_paper(req: PaperRequest):
     return result
 
 
-@router.get("/api/paper/{paper_id}")
+@router.get("/api/paper/{paper_id}", response_model=PaperResponse)
 def get_paper(paper_id: str):
     result = paper_service.get_paper_with_questions(paper_id)
     if result is None:

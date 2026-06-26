@@ -2,12 +2,12 @@
 import json
 import uuid
 
-from app.models.requests import GenerateRequest
+from app.models.requests import GenerateQuestionsRequest
 from app.repositories import questions_repository
 from app.services import ai_service, bloom_service
 
 
-def generate_for_topic(req: GenerateRequest) -> list[dict]:
+def generate_for_topic(req: GenerateQuestionsRequest) -> list[dict]:
     """Asks the AI for a batch of questions for this topic, using the
     requested Bloom distribution. Returns the raw AI-generated dicts —
     persistence is a separate step so the route can distinguish AI failure
@@ -24,7 +24,7 @@ def generate_for_topic(req: GenerateRequest) -> list[dict]:
     )
 
 
-def persist_batch(ai_questions: list[dict], req: GenerateRequest) -> list[str]:
+def persist_batch(ai_questions: list[dict], req: GenerateQuestionsRequest) -> list[str]:
     """Saves AI-generated questions to the bank. Returns the IDs of inserted
     rows."""
     saved_ids: list[str] = []

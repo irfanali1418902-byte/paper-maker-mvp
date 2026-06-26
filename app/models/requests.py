@@ -3,7 +3,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 
-class GenerateRequest(BaseModel):
+class GenerateQuestionsRequest(BaseModel):
     subject: str = ""
     topic: str = ""
     syllabus_topic_id: Optional[str] = None
@@ -13,7 +13,7 @@ class GenerateRequest(BaseModel):
     difficulty: str = "medium"
 
 
-class PaperRequest(BaseModel):
+class GeneratePaperRequest(BaseModel):
     subject: str
     class_name: Optional[str] = None
     total_questions: int = 10
@@ -22,6 +22,8 @@ class PaperRequest(BaseModel):
 
 
 class SchoolSettings(BaseModel):
+    """Used for both the POST body and the GET response (singleton id=1)."""
+    id: Optional[int] = None
     school_name: str = ""
     school_name_ur: str = ""
     address: str = ""

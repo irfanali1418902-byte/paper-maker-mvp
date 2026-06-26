@@ -2,12 +2,12 @@
 import json
 import uuid
 
-from app.models.requests import PaperRequest
+from app.models.requests import GeneratePaperRequest
 from app.repositories import papers_repository, questions_repository
 from app.services import bloom_service
 
 
-def assemble_balanced_paper(req: PaperRequest) -> dict | None:
+def assemble_balanced_paper(req: GeneratePaperRequest) -> dict | None:
     """Picks Bloom-balanced questions (least-used first), bumps their
     usage_count, persists the paper. Returns the paper dict, or None if no
     questions matched any bucket (caller maps that to 404)."""

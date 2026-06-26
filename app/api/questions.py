@@ -1,16 +1,17 @@
 """HTTP routes for question generation and listing."""
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException
 
-from app.models.requests import GenerateRequest
+from app.models.requests import GenerateQuestionsRequest
+from app.models.responses import GenerateQuestionsResponse, Question
 from app.services import question_service, syllabus_service
 
 router = APIRouter()
 
 
-@router.post("/api/generate-questions")
-def generate_questions(req: GenerateRequest):
+@router.post("/api/generate-questions", response_model=GenerateQuestionsResponse)
+def generate_questions(req: GenerateQuestionsRequest):
     """Topic dekar AI se Bloom-tagged bilingual questions generate karta hai
     aur question bank (SQLite) mein save karta hai.
 
@@ -44,7 +45,7 @@ def generate_questions(req: GenerateRequest):
     return {"saved_count": len(saved_ids), "question_ids": saved_ids}
 
 
-@router.get("/api/questions")
+@router.get("/api/questions", response_model=List[Question])
 def list_questions(subject: Optional[str] = None, topic: Optional[str] = None):
     """Question bank browse karne ke liye."""
     return question_service.list_questions(subject=subject, topic=topic)
