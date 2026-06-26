@@ -5,10 +5,11 @@ each bucket can push the sum above `total_questions`. The trim loop must
 bring it back. We sweep small totals exhaustively because that's where the
 bug originally surfaced.
 """
+
 from app.services.bloom_service import calculate_bloom_distribution, calculate_marks
 
-
 # ---- calculate_bloom_distribution -------------------------------------------
+
 
 class TestCalculateBloomDistribution:
 
@@ -21,7 +22,12 @@ class TestCalculateBloomDistribution:
         iterate `dist.items()` and expect every level."""
         dist = calculate_bloom_distribution("balanced", 10)
         assert set(dist.keys()) == {
-            "REMEMBER", "UNDERSTAND", "APPLY", "ANALYZE", "EVALUATE", "CREATE",
+            "REMEMBER",
+            "UNDERSTAND",
+            "APPLY",
+            "ANALYZE",
+            "EVALUATE",
+            "CREATE",
         }
 
     def test_balanced_total_one_handles_rounding_overflow(self):
@@ -70,8 +76,7 @@ class TestCalculateBloomDistribution:
                 dist = calculate_bloom_distribution(dist_type, n)
                 for level, count in dist.items():
                     assert count >= 0, (
-                        f"negative count at n={n}, dist={dist_type}, "
-                        f"level={level}: {count}"
+                        f"negative count at n={n}, dist={dist_type}, " f"level={level}: {count}"
                     )
 
     def test_large_total_balanced_proportions(self):
@@ -87,6 +92,7 @@ class TestCalculateBloomDistribution:
 
 
 # ---- calculate_marks --------------------------------------------------------
+
 
 class TestCalculateMarks:
 

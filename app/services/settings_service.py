@@ -1,4 +1,5 @@
 """School settings (singleton row id=1)."""
+
 from app.models.requests import SchoolSettings
 from app.repositories import settings_repository
 

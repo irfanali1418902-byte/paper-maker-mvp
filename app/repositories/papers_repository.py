@@ -1,12 +1,14 @@
 """SQL access for the papers table."""
+
 import json
 from typing import Optional
 
 from app.core.database import get_connection
 
 
-def insert(paper_id: str, subject: str, class_name: Optional[str],
-           total_marks: int, question_ids: list) -> None:
+def insert(
+    paper_id: str, subject: str, class_name: Optional[str], total_marks: int, question_ids: list
+) -> None:
     conn = get_connection()
     cur = conn.cursor()
     cur.execute(

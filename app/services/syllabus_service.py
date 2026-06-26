@@ -1,9 +1,9 @@
 """Syllabus topic listing + CSV import."""
+
 import csv
 import uuid
 
 from app.repositories import syllabus_repository
-
 
 _ACTIVITY_TO_DIFFICULTY = {
     "Introduction": "easy",

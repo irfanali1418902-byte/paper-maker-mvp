@@ -1,4 +1,5 @@
 """HTTP routes for syllabus topic listing."""
+
 from typing import List, Optional
 
 from fastapi import APIRouter

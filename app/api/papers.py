@@ -1,4 +1,5 @@
 """HTTP routes for paper assembly and retrieval."""
+
 from fastapi import APIRouter, HTTPException
 
 from app.models.requests import GeneratePaperRequest

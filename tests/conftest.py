@@ -7,6 +7,7 @@ looks up `DB_PATH` from its module's namespace at call time.
 
 Each test gets its own DB file — no cross-test contamination.
 """
+
 import pytest
 
 from app.core import database

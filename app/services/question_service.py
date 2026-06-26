@@ -1,4 +1,5 @@
 """Orchestrates question generation (AI call + persistence)."""
+
 import json
 import uuid
 
@@ -35,25 +36,27 @@ def persist_batch(ai_questions: list[dict], req: GenerateQuestionsRequest) -> li
             q.get("question_type", "multiple-choice"),
             req.difficulty,
         )
-        questions_repository.insert({
-            "id": qid,
-            "subject": req.subject,
-            "topic": req.topic,
-            "bloom_level": q.get("bloom_level"),
-            "difficulty": req.difficulty,
-            "question_type": q.get("question_type"),
-            "marks": marks,
-            "question_en": q.get("question_en"),
-            "question_ur": q.get("question_ur"),
-            "options_en": json.dumps(q.get("options_en", [])),
-            "options_ur": json.dumps(q.get("options_ur", [])),
-            "correct_answer_en": q.get("correct_answer_en"),
-            "correct_answer_ur": q.get("correct_answer_ur"),
-            "explanation_en": q.get("explanation_en"),
-            "explanation_ur": q.get("explanation_ur"),
-            "visual_emoji": q.get("visual_emoji"),
-            "visual_count": q.get("visual_count"),
-        })
+        questions_repository.insert(
+            {
+                "id": qid,
+                "subject": req.subject,
+                "topic": req.topic,
+                "bloom_level": q.get("bloom_level"),
+                "difficulty": req.difficulty,
+                "question_type": q.get("question_type"),
+                "marks": marks,
+                "question_en": q.get("question_en"),
+                "question_ur": q.get("question_ur"),
+                "options_en": json.dumps(q.get("options_en", [])),
+                "options_ur": json.dumps(q.get("options_ur", [])),
+                "correct_answer_en": q.get("correct_answer_en"),
+                "correct_answer_ur": q.get("correct_answer_ur"),
+                "explanation_en": q.get("explanation_en"),
+                "explanation_ur": q.get("explanation_ur"),
+                "visual_emoji": q.get("visual_emoji"),
+                "visual_count": q.get("visual_count"),
+            }
+        )
         saved_ids.append(qid)
     return saved_ids
 

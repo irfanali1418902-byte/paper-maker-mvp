@@ -1,5 +1,7 @@
 """Pydantic request shapes used by the API layer."""
+
 from typing import List, Optional
+
 from pydantic import BaseModel
 
 
@@ -23,6 +25,7 @@ class GeneratePaperRequest(BaseModel):
 
 class SchoolSettings(BaseModel):
     """Used for both the POST body and the GET response (singleton id=1)."""
+
     id: Optional[int] = None
     school_name: str = ""
     school_name_ur: str = ""

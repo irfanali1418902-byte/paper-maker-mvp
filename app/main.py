@@ -3,6 +3,7 @@ AII Smart Paper Maker — Phase 1 MVP, layered.
 Run karne ke liye: uvicorn app.main:app --reload --port 8000
 Phir browser mein: http://localhost:8000
 """
+
 from pathlib import Path
 
 from fastapi import FastAPI

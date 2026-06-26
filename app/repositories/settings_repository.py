@@ -1,4 +1,5 @@
 """SQL access for the school_settings table (single-row id=1 upsert)."""
+
 from typing import Optional
 
 from app.core.database import get_connection
@@ -12,8 +13,14 @@ def get() -> Optional[dict]:
     return dict(row) if row else None
 
 
-def upsert(school_name: str, school_name_ur: str, address: str,
-           address_ur: str, logo_base64: Optional[str], accent_color: str) -> None:
+def upsert(
+    school_name: str,
+    school_name_ur: str,
+    address: str,
+    address_ur: str,
+    logo_base64: Optional[str],
+    accent_color: str,
+) -> None:
     conn = get_connection()
     cur = conn.cursor()
     cur.execute(

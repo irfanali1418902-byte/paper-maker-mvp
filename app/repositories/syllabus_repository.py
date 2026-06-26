@@ -1,4 +1,5 @@
 """SQL access for the syllabus_topics table."""
+
 from typing import Optional
 
 from app.core.database import get_connection
@@ -39,9 +40,18 @@ def list_distinct_subject_grade() -> list:
     return [{"subject": row["subject"], "grade": row["grade"]} for row in rows]
 
 
-def insert(topic_id: str, subject: str, grade: str, unit_no: int,
-           unit_title: str, page_range: str, subtopic_title: str,
-           activity_type: str, page_no: Optional[int], learning_outcome: str) -> None:
+def insert(
+    topic_id: str,
+    subject: str,
+    grade: str,
+    unit_no: int,
+    unit_title: str,
+    page_range: str,
+    subtopic_title: str,
+    activity_type: str,
+    page_no: Optional[int],
+    learning_outcome: str,
+) -> None:
     """Used by the CSV importer. Raises on UNIQUE constraint violation;
     caller decides what to do with duplicates."""
     conn = get_connection()
@@ -51,8 +61,18 @@ def insert(topic_id: str, subject: str, grade: str, unit_no: int,
            (id, subject, grade, unit_no, unit_title, page_range,
             subtopic_title, activity_type, page_no, learning_outcome)
            VALUES (?,?,?,?,?,?,?,?,?,?)""",
-        (topic_id, subject, grade, unit_no, unit_title, page_range,
-         subtopic_title, activity_type, page_no, learning_outcome),
+        (
+            topic_id,
+            subject,
+            grade,
+            unit_no,
+            unit_title,
+            page_range,
+            subtopic_title,
+            activity_type,
+            page_no,
+            learning_outcome,
+        ),
     )
     conn.commit()
     conn.close()

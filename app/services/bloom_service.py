@@ -5,11 +5,20 @@ Distribution percentages yahan se reuse ki gayi hain (Harsha20033 repo se
 reverse-engineer kar ke), kyunki ye exact wahi standard split hai jo
 original spec document mein bhi diya gaya tha (20/20/20/15/15/10).
 """
+
 import math
 
 BLOOM_LEVELS = {
-    "REMEMBER": {"name": "Remember", "code": "CO1", "description": "Recall facts and basic concepts"},
-    "UNDERSTAND": {"name": "Understand", "code": "CO2", "description": "Explain ideas and concepts"},
+    "REMEMBER": {
+        "name": "Remember",
+        "code": "CO1",
+        "description": "Recall facts and basic concepts",
+    },
+    "UNDERSTAND": {
+        "name": "Understand",
+        "code": "CO2",
+        "description": "Explain ideas and concepts",
+    },
     "APPLY": {"name": "Apply", "code": "CO3", "description": "Use information in new situations"},
     "ANALYZE": {"name": "Analyze", "code": "CO4", "description": "Draw connections among ideas"},
     "EVALUATE": {"name": "Evaluate", "code": "CO5", "description": "Justify a stand or decision"},
@@ -69,10 +78,14 @@ def calculate_marks(bloom_level: str, question_type: str, difficulty: str) -> in
     """Simple heuristic: higher cognitive levels and harder difficulty get
     more marks. Tweak these numbers freely once you have real exam data."""
     base = {"REMEMBER": 1, "UNDERSTAND": 2, "APPLY": 3, "ANALYZE": 4, "EVALUATE": 4, "CREATE": 5}
-    type_bonus = {"essay": 3, "short-answer": 1, "multiple-choice": 0, "true-false": 0, "fill-blank": 0}
+    type_bonus = {
+        "essay": 3,
+        "short-answer": 1,
+        "multiple-choice": 0,
+        "true-false": 0,
+        "fill-blank": 0,
+    }
     diff_bonus = {"easy": 0, "medium": 1, "hard": 2}
     return (
-        base.get(bloom_level, 2)
-        + type_bonus.get(question_type, 0)
-        + diff_bonus.get(difficulty, 1)
+        base.get(bloom_level, 2) + type_bonus.get(question_type, 0) + diff_bonus.get(difficulty, 1)
     )

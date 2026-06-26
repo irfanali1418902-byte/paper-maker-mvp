@@ -1,4 +1,5 @@
 """HTTP routes for school settings (singleton)."""
+
 from fastapi import APIRouter
 
 from app.models.requests import SchoolSettings

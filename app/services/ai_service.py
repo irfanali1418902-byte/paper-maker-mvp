@@ -12,8 +12,10 @@ Reference repo (Harsha20033) ke createAIPrompt() se prompt-design ka idea
 liya gaya hai (structured JSON output mangwana), bilingual instruction
 add ki gayi hai.
 """
-import os
+
 import json
+import os
+
 import requests
 from dotenv import load_dotenv
 
@@ -28,13 +30,17 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
 
 GEMINI_MODEL = "gemini-2.5-flash"
-GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+GEMINI_API_URL = (
+    f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+)
 
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_MODEL = "claude-sonnet-4-6"
 
 
-def build_prompt(topic: str, subject: str, bloom_distribution: dict, question_types: list, difficulty: str) -> str:
+def build_prompt(
+    topic: str, subject: str, bloom_distribution: dict, question_types: list, difficulty: str
+) -> str:
     bloom_lines = "\n".join(
         f"- {level}: {count} questions" for level, count in bloom_distribution.items() if count > 0
     )
@@ -105,12 +111,12 @@ def _extract_json(text: str) -> list:
 
     try:
         parsed = json.loads(cleaned[json_start:json_end])
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
         raise ValueError(
             "AI response truncate ho gaya lagta hai (JSON incomplete hai). "
             "Kam questions (e.g. 5-6) ke saath dobara try karen, ya difficulty/distribution "
             "simple rakhen. Raw response (first 300 chars): " + text[:300]
-        )
+        ) from e
 
     return parsed.get("questions", [])
 
@@ -188,7 +194,9 @@ def _generate_with_claude(prompt: str) -> list:
     return _extract_json(text)
 
 
-def generate_questions_from_ai(topic: str, subject: str, bloom_distribution: dict, question_types: list, difficulty: str) -> list:
+def generate_questions_from_ai(
+    topic: str, subject: str, bloom_distribution: dict, question_types: list, difficulty: str
+) -> list:
     prompt = build_prompt(topic, subject, bloom_distribution, question_types, difficulty)
 
     if ANTHROPIC_API_KEY:

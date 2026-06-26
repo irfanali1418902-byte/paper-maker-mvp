@@ -1,12 +1,17 @@
 """Basic CRUD-shape tests for questions_repository against a temp DB."""
+
 import json
 
 from app.repositories import questions_repository
 
 
-def _sample_question(qid: str = "q1", subject: str = "Mathematics",
-                     topic: str = "Counting", bloom_level: str = "REMEMBER",
-                     difficulty: str = "easy") -> dict:
+def _sample_question(
+    qid: str = "q1",
+    subject: str = "Mathematics",
+    topic: str = "Counting",
+    bloom_level: str = "REMEMBER",
+    difficulty: str = "easy",
+) -> dict:
     """Builds a fully-populated question row for insertion."""
     return {
         "id": qid,
@@ -78,8 +83,10 @@ def test_find_least_used_orders_by_usage_count_ascending(test_db):
     questions_repository.increment_usage_count("q2")
 
     rows = questions_repository.find_least_used(
-        subject="Mathematics", bloom_level="REMEMBER",
-        difficulty="easy", limit=3,
+        subject="Mathematics",
+        bloom_level="REMEMBER",
+        difficulty="easy",
+        limit=3,
     )
     assert [r["id"] for r in rows] == ["q3", "q2", "q1"]
 
@@ -88,8 +95,10 @@ def test_find_least_used_respects_limit(test_db):
     for i in range(5):
         questions_repository.insert(_sample_question(qid=f"q{i}"))
     rows = questions_repository.find_least_used(
-        subject="Mathematics", bloom_level="REMEMBER",
-        difficulty="easy", limit=2,
+        subject="Mathematics",
+        bloom_level="REMEMBER",
+        difficulty="easy",
+        limit=2,
     )
     assert len(rows) == 2
 
@@ -99,7 +108,9 @@ def test_find_least_used_with_none_difficulty_matches_all(test_db):
     questions_repository.insert(_sample_question(qid="q2", difficulty="hard"))
 
     rows = questions_repository.find_least_used(
-        subject="Mathematics", bloom_level="REMEMBER",
-        difficulty=None, limit=10,
+        subject="Mathematics",
+        bloom_level="REMEMBER",
+        difficulty=None,
+        limit=10,
     )
     assert len(rows) == 2

@@ -10,16 +10,19 @@ fix is to add the new column to the model below, not to widen the route
 return type. Keep these in sync with the actual columns under
 `app/core/database.py`.
 """
+
 from typing import List, Optional
+
 from pydantic import BaseModel
 
-
 # ---- Domain shapes (reused across endpoints) --------------------------------
+
 
 class Question(BaseModel):
     """One row of the questions table. options_en / options_ur stay as
     JSON-encoded strings because that's how SQLite stores them — the
     frontend JSON.parses them on receipt."""
+
     id: str
     subject: str
     topic: str
@@ -44,6 +47,7 @@ class Question(BaseModel):
 class Paper(BaseModel):
     """One row of the papers table. question_ids stays as JSON-encoded
     string (matches DB storage)."""
+
     id: str
     subject: str
     class_name: Optional[str] = None
@@ -55,6 +59,7 @@ class Paper(BaseModel):
 class SyllabusTopic(BaseModel):
     """syllabus_topics row, plus a derived 'suggested_difficulty' annotation
     that the service layer adds."""
+
     id: str
     subject: str
     grade: Optional[str] = None
@@ -70,11 +75,13 @@ class SyllabusTopic(BaseModel):
 
 class SubjectGrade(BaseModel):
     """Used by /api/syllabus-grades dropdown — distinct (subject, grade) pairs."""
+
     subject: str
     grade: Optional[str] = None
 
 
 # ---- Endpoint-specific responses --------------------------------------------
+
 
 class GenerateQuestionsResponse(BaseModel):
     saved_count: int
@@ -89,6 +96,7 @@ class GeneratePaperResponse(BaseModel):
 
 class PaperResponse(BaseModel):
     """GET /api/paper/{paper_id} ka response: poora paper + sab questions."""
+
     paper: Paper
     questions: List[Question]
 
@@ -96,4 +104,5 @@ class PaperResponse(BaseModel):
 class StatusResponse(BaseModel):
     """Generic acknowledgement for write endpoints jo koi domain object
     return nahi karte (e.g. POST /api/school-settings)."""
+
     status: str

@@ -1,4 +1,5 @@
 """Basic tests for usage_log_repository."""
+
 from app.core.database import get_connection
 from app.repositories import usage_log_repository
 
@@ -12,8 +13,12 @@ def _fetch_all():
 
 def test_insert_records_one_row(test_db):
     row_id = usage_log_repository.insert(
-        provider="gemini", model="gemini-2.5-flash", status="success",
-        input_tokens=100, output_tokens=500, total_tokens=600,
+        provider="gemini",
+        model="gemini-2.5-flash",
+        status="success",
+        input_tokens=100,
+        output_tokens=500,
+        total_tokens=600,
     )
     assert row_id
 
@@ -32,7 +37,9 @@ def test_insert_records_one_row(test_db):
 def test_insert_with_null_token_counts(test_db):
     """Provider response may omit usage data; nullable columns must accept that."""
     usage_log_repository.insert(
-        provider="claude", model="claude-sonnet-4-6", status="success",
+        provider="claude",
+        model="claude-sonnet-4-6",
+        status="success",
     )
     row = _fetch_all()[0]
     assert row["input_tokens"] is None

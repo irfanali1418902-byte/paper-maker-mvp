@@ -1,4 +1,5 @@
 """SQL access for the questions table. No business logic, no HTTP."""
+
 from typing import Optional
 
 from app.core.database import get_connection
@@ -17,14 +18,23 @@ def insert(question_row: dict) -> None:
             visual_emoji, visual_count)
            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         (
-            question_row["id"], question_row["subject"], question_row["topic"],
-            question_row["bloom_level"], question_row["difficulty"],
-            question_row["question_type"], question_row["marks"],
-            question_row["question_en"], question_row["question_ur"],
-            question_row["options_en"], question_row["options_ur"],
-            question_row["correct_answer_en"], question_row["correct_answer_ur"],
-            question_row["explanation_en"], question_row["explanation_ur"],
-            question_row["visual_emoji"], question_row["visual_count"],
+            question_row["id"],
+            question_row["subject"],
+            question_row["topic"],
+            question_row["bloom_level"],
+            question_row["difficulty"],
+            question_row["question_type"],
+            question_row["marks"],
+            question_row["question_en"],
+            question_row["question_ur"],
+            question_row["options_en"],
+            question_row["options_ur"],
+            question_row["correct_answer_en"],
+            question_row["correct_answer_ur"],
+            question_row["explanation_en"],
+            question_row["explanation_ur"],
+            question_row["visual_emoji"],
+            question_row["visual_count"],
         ),
     )
     conn.commit()

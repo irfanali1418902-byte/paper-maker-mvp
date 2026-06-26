@@ -1,4 +1,5 @@
 """HTTP routes for question generation and listing."""
+
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException
@@ -35,12 +36,14 @@ def generate_questions(req: GenerateQuestionsRequest):
     try:
         ai_questions = question_service.generate_for_topic(req)
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"AI generation fail hui: {e}")
+        raise HTTPException(status_code=502, detail=f"AI generation fail hui: {e}") from e
 
     try:
         saved_ids = question_service.persist_batch(ai_questions, req)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Question save fail hui (DB error): {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Question save fail hui (DB error): {e}"
+        ) from e
 
     return {"saved_count": len(saved_ids), "question_ids": saved_ids}
 

@@ -1,13 +1,17 @@
 """Basic tests for settings_repository (singleton row id=1)."""
+
 from app.core.database import get_connection
 from app.repositories import settings_repository
 
 
 def _save(school_name: str, accent_color: str = "#000") -> None:
     settings_repository.upsert(
-        school_name=school_name, school_name_ur="",
-        address="", address_ur="",
-        logo_base64=None, accent_color=accent_color,
+        school_name=school_name,
+        school_name_ur="",
+        address="",
+        address_ur="",
+        logo_base64=None,
+        accent_color=accent_color,
     )
 
 
