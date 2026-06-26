@@ -17,6 +17,8 @@ import json
 import requests
 from dotenv import load_dotenv
 
+from app.repositories import usage_log_repository
+
 # Project root ki .env file se GEMINI_API_KEY / ANTHROPIC_API_KEY load karta
 # hai. Ye line module-level os.environ.get() calls se PEHLE chalni zaroori
 # hai, warna keys None reh jayengi.
@@ -126,6 +128,18 @@ def _generate_with_gemini(prompt: str) -> list:
     response.raise_for_status()
     data = response.json()
 
+    # Billing-grade usage log lands here — provider already charged for the
+    # tokens, so log before any further parsing that could raise.
+    usage = data.get("usageMetadata", {})
+    usage_log_repository.insert(
+        provider="gemini",
+        model=GEMINI_MODEL,
+        status="success",
+        input_tokens=usage.get("promptTokenCount"),
+        output_tokens=usage.get("candidatesTokenCount"),
+        total_tokens=usage.get("totalTokenCount"),
+    )
+
     try:
         text = data["candidates"][0]["content"]["parts"][0]["text"]
     except (KeyError, IndexError) as e:
@@ -151,6 +165,22 @@ def _generate_with_claude(prompt: str) -> list:
     )
     response.raise_for_status()
     data = response.json()
+
+    # Anthropic returns input + output tokens separately; compute total
+    # ourselves when both are present so the column stays comparable to
+    # the Gemini case.
+    usage = data.get("usage", {})
+    input_t = usage.get("input_tokens")
+    output_t = usage.get("output_tokens")
+    total_t = (input_t + output_t) if input_t is not None and output_t is not None else None
+    usage_log_repository.insert(
+        provider="claude",
+        model=ANTHROPIC_MODEL,
+        status="success",
+        input_tokens=input_t,
+        output_tokens=output_t,
+        total_tokens=total_t,
+    )
 
     text = "".join(
         block.get("text", "") for block in data.get("content", []) if block.get("type") == "text"

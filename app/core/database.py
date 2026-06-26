@@ -100,5 +100,24 @@ def init_db() -> None:
         """
     )
 
+    # Per-call AI provider usage log. Har successful Gemini/Claude API call
+    # ek row likhti hai — yehi future per-school billing ka base banega.
+    # IF NOT EXISTS itself is idempotent: fresh installs banayenge, existing
+    # DBs untouched chhod denge.
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS usage_log (
+            id TEXT PRIMARY KEY,
+            timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+            provider TEXT NOT NULL,
+            model TEXT NOT NULL,
+            status TEXT NOT NULL,
+            input_tokens INTEGER,
+            output_tokens INTEGER,
+            total_tokens INTEGER
+        )
+        """
+    )
+
     conn.commit()
     conn.close()
