@@ -22,3 +22,19 @@ select = ["E", "F", "I", "W", "B"]
 # E501 (line too long) is owned by Black — disabling here avoids two
 # tools fighting over the same verdict.
 ignore = ["E501"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI ki dependency-injection constructors ko default-arg position mein
+# call karna framework ki conventional usage hai (File(...), Depends(...),
+# etc.). Default B008 rule generally good hai but FastAPI specifically
+# isi pattern par chalta hai.
+extend-immutable-calls = [
+    "fastapi.Body",
+    "fastapi.Cookie",
+    "fastapi.Depends",
+    "fastapi.File",
+    "fastapi.Form",
+    "fastapi.Header",
+    "fastapi.Path",
+    "fastapi.Query",
+]

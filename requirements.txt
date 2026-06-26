@@ -8,3 +8,5 @@ ruff
 black
 pre-commit
 pandas
+openpyxl
+python-multipart

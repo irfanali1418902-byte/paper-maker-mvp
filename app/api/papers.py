@@ -1,10 +1,11 @@
 """HTTP routes for paper assembly and retrieval."""
 
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, File, HTTPException, Response, UploadFile
 
 from app.models.requests import GeneratePaperRequest
 from app.models.responses import GeneratePaperResponse, PaperResponse
 from app.services import paper_service, result_service
+from app.services.exceptions import ResultsValidationError
 
 router = APIRouter()
 
@@ -61,3 +62,30 @@ def get_result_template(paper_id: str):
             "Content-Disposition": f'attachment; filename="paper-{paper_id}-results.csv"',
         },
     )
+
+
+@router.post("/api/paper/{paper_id}/upload-results")
+def upload_results(paper_id: str, file: UploadFile = File(...)):
+    """Teacher ka filled-in CSV/xlsx (template hi format mein) accept karta
+    hai, validate karta hai, aur result_uploads + student_question_results
+    mein save karta hai. Validation errors saari ek hi response mein wapas
+    aati hain (400) — teacher pura sheet ek hi pass mein fix kare."""
+    contents = file.file.read()
+
+    try:
+        result = result_service.import_results(paper_id, file.filename, contents)
+    except ResultsValidationError as e:
+        # Pass the structured per-row errors straight through so the
+        # frontend can render them inline against the spreadsheet.
+        raise HTTPException(status_code=400, detail=e.errors) from e
+    except ValueError as e:
+        # Unparseable file / wrong extension — well-formed request, bad content.
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Results upload fail hui (DB error): {e}"
+        ) from e
+
+    if result is None:
+        raise HTTPException(status_code=404, detail="Paper nahi mila.")
+    return result
