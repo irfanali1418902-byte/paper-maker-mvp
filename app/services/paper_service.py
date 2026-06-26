@@ -1,0 +1,59 @@
+"""Orchestrates paper assembly from the question bank."""
+import json
+import uuid
+
+from app.models.requests import PaperRequest
+from app.repositories import papers_repository, questions_repository
+from app.services import bloom_service
+
+
+def assemble_balanced_paper(req: PaperRequest) -> dict | None:
+    """Picks Bloom-balanced questions (least-used first), bumps their
+    usage_count, persists the paper. Returns the paper dict, or None if no
+    questions matched any bucket (caller maps that to 404)."""
+    distribution = bloom_service.calculate_bloom_distribution(
+        req.bloom_distribution, req.total_questions
+    )
+    selected_ids: list[str] = []
+    selected_questions: list[dict] = []
+
+    for level, count in distribution.items():
+        if count <= 0:
+            continue
+        rows = questions_repository.find_least_used(
+            subject=req.subject,
+            bloom_level=level,
+            difficulty=req.difficulty,
+            limit=count,
+        )
+        for row in rows:
+            selected_ids.append(row["id"])
+            selected_questions.append(row)
+            questions_repository.increment_usage_count(row["id"])
+
+    if not selected_questions:
+        return None
+
+    paper_id = str(uuid.uuid4())
+    total_marks = sum(q["marks"] for q in selected_questions)
+    papers_repository.insert(
+        paper_id=paper_id,
+        subject=req.subject,
+        class_name=req.class_name,
+        total_marks=total_marks,
+        question_ids=selected_ids,
+    )
+    return {"paper_id": paper_id, "total_marks": total_marks, "questions": selected_questions}
+
+
+def get_paper_with_questions(paper_id: str) -> dict | None:
+    paper = papers_repository.find_by_id(paper_id)
+    if not paper:
+        return None
+    question_ids = json.loads(paper["question_ids"])
+    questions: list[dict] = []
+    for qid in question_ids:
+        q = questions_repository.find_by_id(qid)
+        if q:
+            questions.append(q)
+    return {"paper": paper, "questions": questions}

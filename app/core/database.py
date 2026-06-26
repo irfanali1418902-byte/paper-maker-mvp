@@ -6,7 +6,8 @@ ko Supabase/PostgreSQL par seedha migrate kiya ja sakta hai.
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent / "paper_maker.db"
+# app/core/database.py se project root tak teen levels upar.
+DB_PATH = Path(__file__).parent.parent.parent / "paper_maker.db"
 
 
 def get_connection() -> sqlite3.Connection:

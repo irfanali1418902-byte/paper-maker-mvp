@@ -1,0 +1,29 @@
+"""HTTP routes for paper assembly and retrieval."""
+from fastapi import APIRouter, HTTPException
+
+from app.models.requests import PaperRequest
+from app.services import paper_service
+
+router = APIRouter()
+
+
+@router.post("/api/generate-paper")
+def generate_paper(req: PaperRequest):
+    """Question bank se Bloom + difficulty distribution ke hisaab se balanced
+    paper assemble karta hai. Least-used questions ko priority deta hai
+    (taake repetition kam ho)."""
+    result = paper_service.assemble_balanced_paper(req)
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Is subject/Bloom-level ke liye question bank khali hai. Pehle /api/generate-questions se questions banayen.",
+        )
+    return result
+
+
+@router.get("/api/paper/{paper_id}")
+def get_paper(paper_id: str):
+    result = paper_service.get_paper_with_questions(paper_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Paper nahi mila.")
+    return result
