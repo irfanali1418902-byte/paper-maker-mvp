@@ -12,5 +12,8 @@ __pycache__/
 .venv/
 .claude/
 
+# Local Claude Code overrides (machine-specific, not source)
+CLAUDE.local.md
+
 # Claude Code setup/onboarding scaffolding (not application code)
 paper-maker-claude-setup/
