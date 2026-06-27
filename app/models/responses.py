@@ -164,7 +164,12 @@ class StudentResult(BaseModel):
 
 
 class QuestionStat(BaseModel):
-    """Per-question difficulty signal — low average_percent = class struggled."""
+    """Per-question difficulty signal — low average_percent = class struggled.
+
+    Phase B adds the psychometric indices: Difficulty Index (p_value, 0..1)
+    and Discrimination Index (d_index, -1..1) with their classification bands.
+    d_reliable is False for small classes where the top/bottom split is not
+    meaningful; flag carries a human reason when the item looks bad, else null."""
 
     question_index: int
     question_id: str
@@ -174,6 +179,12 @@ class QuestionStat(BaseModel):
     average_marks: float
     average_percent: float
     full_marks_count: int
+    p_value: float
+    p_band: str
+    d_index: float
+    d_band: str
+    d_reliable: bool
+    flag: Optional[str] = None
 
 
 class BloomStat(BaseModel):

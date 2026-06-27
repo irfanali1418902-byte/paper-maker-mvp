@@ -62,3 +62,96 @@ def summarize_paper_balance(questions: list[dict]) -> dict:
 def _band(count: int, total: int) -> dict:
     """Ek band ka count + guarded percent (total 0 par ZeroDivision se bachao)."""
     return {"count": count, "percent": round(count / total * 100, 1) if total else 0.0}
+
+
+# ---- Phase B: Difficulty Index (P) + Discrimination Index (D) ---------------
+#
+# Both indices are generalized to partial-credit items (questions carry
+# varying max marks, not just right/wrong) by working in proportion-of-marks:
+#   P = mean marks / max marks
+#   D = (top group mean − bottom group mean) / max marks
+
+# P-value bands (proportion 0..1). Outside [too_hard, too_easy] the item is
+# flagged. Tune against real Swat exam data.
+P_TOO_HARD = 0.30
+P_TOO_EASY = 0.85
+
+# D-index uses the classic top/bottom 27% split. Below this many students the
+# split is statistically meaningless, so we still compute D but mark it
+# unreliable (UI greys it out rather than acting on it).
+DISCRIMINATION_GROUP_FRACTION = 0.27
+MIN_STUDENTS_FOR_RELIABLE_D = 10
+
+
+def difficulty_index(average_marks: float, max_marks: float) -> float:
+    """P-value = average marks / max marks, in 0..1. Higher = easier item.
+    max_marks 0 (shouldn't happen) yields 0.0 instead of dividing by zero."""
+    if max_marks <= 0:
+        return 0.0
+    return round(average_marks / max_marks, 2)
+
+
+def discrimination_index(student_scores: list[tuple[float, float]], max_marks: float) -> float:
+    """D-index in -1..1. `student_scores` is one (student_total, marks_on_this_
+    question) pair per student who attempted the item. We rank by total score,
+    take the top and bottom 27% (at least 1 each, never overlapping), and
+    return (top mean − bottom mean) / max_marks. Undefined cases give 0.0."""
+    n = len(student_scores)
+    if n < 2 or max_marks <= 0:
+        return 0.0
+
+    ordered = sorted(student_scores, key=lambda s: s[0], reverse=True)
+    # 27% rounded, but never let the two groups overlap (matters at small n).
+    group_size = min(max(1, round(n * DISCRIMINATION_GROUP_FRACTION)), n // 2)
+
+    top = ordered[:group_size]
+    bottom = ordered[-group_size:]
+    top_mean = sum(marks for _, marks in top) / group_size
+    bottom_mean = sum(marks for _, marks in bottom) / group_size
+    return round((top_mean - bottom_mean) / max_marks, 2)
+
+
+def is_d_reliable(student_count: int) -> bool:
+    """True jab itne students hon ke top/bottom split meaningful ho."""
+    return student_count >= MIN_STUDENTS_FOR_RELIABLE_D
+
+
+def classify_p(p_value: float) -> str:
+    """too_hard / good / too_easy."""
+    if p_value < P_TOO_HARD:
+        return "too_hard"
+    if p_value > P_TOO_EASY:
+        return "too_easy"
+    return "good"
+
+
+def classify_d(d_index: float) -> str:
+    """problematic (negative) / poor / acceptable / good / excellent."""
+    if d_index < 0:
+        return "problematic"
+    if d_index < 0.20:
+        return "poor"
+    if d_index < 0.30:
+        return "acceptable"
+    if d_index < 0.40:
+        return "good"
+    return "excellent"
+
+
+def flag_question(p_band: str, d_band: str, d_reliable: bool) -> str | None:
+    """Human-readable reason(s) ke saath bad question ko flag karta hai, warna
+    None. Unreliable D (chhoti class) par discrimination-based flag nahi
+    lagate — sirf P-value waale."""
+    reasons: list[str] = []
+    if p_band == "too_hard":
+        reasons.append("bahut mushkil (P-value kam)")
+    elif p_band == "too_easy":
+        reasons.append("bahut aasaan (P-value zyada)")
+
+    if d_reliable:
+        if d_band == "problematic":
+            reasons.append("ulta discriminate (D negative — key galat ho sakti hai)")
+        elif d_band == "poor":
+            reasons.append("kamzor discrimination (D < 0.20)")
+
+    return "; ".join(reasons) if reasons else None

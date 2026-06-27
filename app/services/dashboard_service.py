@@ -18,6 +18,7 @@ import json
 from typing import Optional
 
 from app.repositories import papers_repository, questions_repository, result_repository
+from app.services import item_analysis_service
 
 # KPK board ka standard passing mark 33% hai. Business rule hai, isiliye
 # service mein — agar koi school apna threshold chahe to yahin badlega.
@@ -74,7 +75,7 @@ def _build_dashboard(upload: dict, paper: dict) -> dict:
     rows = result_repository.list_results_for_upload(upload["id"])
 
     students = _aggregate_students(rows, total_marks)
-    question_stats = _aggregate_questions(rows, questions)
+    question_stats = _aggregate_questions(rows, questions, students)
     bloom_breakdown = _aggregate_blooms(question_stats)
     summary = _build_summary(students, total_marks)
 
@@ -116,14 +117,23 @@ def _aggregate_students(rows: list[dict], total_marks: int) -> list[dict]:
     return students
 
 
-def _aggregate_questions(rows: list[dict], questions: list[dict]) -> list[dict]:
-    """Per-question average + how many students scored full marks. Average
-    percent surfaces which questions the class found hard."""
+def _aggregate_questions(
+    rows: list[dict], questions: list[dict], students: list[dict]
+) -> list[dict]:
+    """Per-question average + full-marks count, plus the psychometric indices:
+    Difficulty Index (P-value) and Discrimination Index (D). D needs each
+    student's total score, so we pass `students` (already totalled) in."""
     obtained_by_q: dict[str, list[int]] = {q["id"]: [] for q in questions}
+    # Per question, one (student_total, marks_on_this_question) pair per row —
+    # the input the discrimination index works on.
+    scores_by_q: dict[str, list[tuple[float, float]]] = {q["id"]: [] for q in questions}
+    total_by_roll = {s["roll_no"]: s["marks_obtained"] for s in students}
+
     for r in rows:
         qid = r["question_id"]
         if qid in obtained_by_q:
             obtained_by_q[qid].append(r["marks_obtained"])
+            scores_by_q[qid].append((total_by_roll.get(r["roll_no"], 0), r["marks_obtained"]))
 
     stats: list[dict] = []
     for q in questions:
@@ -131,6 +141,13 @@ def _aggregate_questions(rows: list[dict], questions: list[dict]) -> list[dict]:
         attempts = len(marks_list)
         max_marks = q["marks"]
         avg_marks = sum(marks_list) / attempts if attempts else 0.0
+
+        p_value = item_analysis_service.difficulty_index(avg_marks, max_marks)
+        d_index = item_analysis_service.discrimination_index(scores_by_q[q["id"]], max_marks)
+        d_reliable = item_analysis_service.is_d_reliable(attempts)
+        p_band = item_analysis_service.classify_p(p_value)
+        d_band = item_analysis_service.classify_d(d_index)
+
         stats.append(
             {
                 "question_index": q["index"],
@@ -141,6 +158,12 @@ def _aggregate_questions(rows: list[dict], questions: list[dict]) -> list[dict]:
                 "average_marks": round(avg_marks, 2),
                 "average_percent": _percent(avg_marks, max_marks),
                 "full_marks_count": sum(1 for m in marks_list if m == max_marks),
+                "p_value": p_value,
+                "p_band": p_band,
+                "d_index": d_index,
+                "d_band": d_band,
+                "d_reliable": d_reliable,
+                "flag": item_analysis_service.flag_question(p_band, d_band, d_reliable),
             }
         )
     return stats

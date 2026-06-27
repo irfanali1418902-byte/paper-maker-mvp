@@ -44,6 +44,15 @@
   .bar.mid { background: #e0a33a; }
   .bar.weak { background: #d4584c; }
 
+  /* P-value / D-index cells, coloured by quality band */
+  .pd { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pd.good { color: #1d6e56; }
+  .pd.mid { color: #a9722f; }
+  .pd.weak { color: #b3261e; }
+  .pd.unreliable { color: #aaa; font-weight: 400; }
+  tr.flagged td { background: #fff7f6; }
+  .flag-reason { font-size: 12px; color: #b3261e; }
+
   .hidden { display: none; }
   .empty { color: #888; font-size: 14px; margin-top: 12px; }
 </style>
@@ -226,18 +235,44 @@ function renderQuestions(questions) {
   const wrap = document.getElementById("questionsWrap");
   if (!questions.length) { wrap.innerHTML = `<p class="empty">Koi question data nahi.</p>`; return; }
   const rows = questions.map(q => `
-    <tr>
-      <td>Q${q.question_index}</td>
+    <tr${q.flag ? ' class="flagged"' : ''}>
+      <td>${q.flag ? "⚠️ " : ""}Q${q.question_index}</td>
       <td>${escapeHtml(q.bloom_level)}</td>
       <td class="num">${q.average_marks}/${q.max_marks}</td>
       <td>${barCell(q.average_percent)}</td>
-      <td class="num">${q.full_marks_count}/${q.student_count}</td>
+      <td class="num">${pCell(q)}</td>
+      <td class="num">${dCell(q)}</td>
+      <td>${q.flag ? `<span class="flag-reason">${escapeHtml(q.flag)}</span>` : ""}</td>
     </tr>`).join("");
   wrap.innerHTML = `
     <table>
-      <thead><tr><th>Question</th><th>Bloom</th><th class="num">Avg marks</th><th>Avg %</th><th class="num">Full marks</th></tr></thead>
+      <thead><tr>
+        <th>Question</th><th>Bloom</th><th class="num">Avg marks</th><th>Avg %</th>
+        <th class="num">P-value</th><th class="num">D-index</th><th>Flag</th>
+      </tr></thead>
       <tbody>${rows}</tbody>
-    </table>`;
+    </table>
+    <p class="sub" style="margin-top:8px">
+      <strong>P-value</strong> (0–1): difficulty — &lt;0.30 bahut mushkil, &gt;0.85 bahut aasaan.
+      <strong>D-index</strong> (−1 to 1): discrimination — ≥0.30 acha, &lt;0.20 kamzor, negative = key check karein.
+      Choti class (&lt;10 students) mein D-index reliable nahi — greyed out.
+    </p>`;
+}
+
+// P-value cell, coloured by band.
+function pCell(q) {
+  const cls = q.p_band === "good" ? "good" : "weak";
+  return `<span class="pd ${cls}">${q.p_value.toFixed(2)}</span>`;
+}
+
+// D-index cell. Greyed + asterisked when the class is too small to trust it.
+function dCell(q) {
+  if (!q.d_reliable) {
+    return `<span class="pd unreliable" title="Choti class — D-index reliable nahi">${q.d_index.toFixed(2)}*</span>`;
+  }
+  const cls = (q.d_band === "good" || q.d_band === "excellent") ? "good"
+            : q.d_band === "acceptable" ? "mid" : "weak";
+  return `<span class="pd ${cls}">${q.d_index.toFixed(2)}</span>`;
 }
 
 function renderBlooms(blooms) {
