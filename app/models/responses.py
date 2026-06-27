@@ -119,6 +119,22 @@ class GeneratePaperResponse(BaseModel):
     balance_summary: PaperBalanceSummary
 
 
+class AdaptiveLevel(BaseModel):
+    """One Bloom level's weakness signal and the share it earned in an adaptive
+    paper — weakest level first in the response."""
+
+    bloom_level: str
+    average_percent: float
+    questions_allocated: int
+
+
+class AdaptivePaperResponse(GeneratePaperResponse):
+    """Phase 3 adaptive paper: a generated paper plus the per-level breakdown
+    explaining why each Bloom level got the share it did."""
+
+    adaptive_summary: List[AdaptiveLevel]
+
+
 class PaperResponse(BaseModel):
     """GET /api/paper/{paper_id} ka response: poora paper + sab questions."""
 

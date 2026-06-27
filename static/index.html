@@ -86,7 +86,16 @@
   <button id="printBtn" style="display:none;background:#a9722f" onclick="openPrintView()">3. Print / PDF dekhen</button>
   <button id="dashboardBtn" style="display:none;background:#2a5d8f" onclick="openDashboard()">4. Result dashboard dekhen</button>
 
+  <div style="border:1px solid #ddd;border-radius:8px;padding:14px;margin-top:16px;background:#f4f1fa">
+    <div style="font-weight:600">🎯 Adaptive paper — class ki kamzoriyon se</div>
+    <p class="sub" style="margin-top:4px">Kisi paper ke uploaded results se class ki weak Bloom levels nikaal kar un par focus karta naya paper banayen.</p>
+    <label style="margin-top:0">Learn from paper ID (jiska result upload hua hai)</label>
+    <input id="adaptiveSourceId" placeholder="e.g. 4a0af91b-..." />
+    <button style="background:#5b3da8" onclick="buildAdaptivePaper()">Generate adaptive paper</button>
+  </div>
+
   <div id="status"></div>
+  <div id="adaptiveSummary"></div>
   <div id="balanceSummary"></div>
   <div id="results"></div>
 
@@ -264,11 +273,68 @@ async function buildPaper() {
     document.getElementById('printBtn').style.display = 'inline-block';
     document.getElementById('dashboardBtn').style.display = 'inline-block';
     setStatus(`Paper ban gaya — Total marks: ${data.total_marks}`);
+    document.getElementById('adaptiveSummary').innerHTML = '';
     renderBalanceSummary(data.balance_summary);
     renderQuestions(data.questions);
   } catch (e) {
     setStatus('Error: ' + e.message);
   }
+}
+
+async function buildAdaptivePaper() {
+  const sourceId = val('adaptiveSourceId').trim();
+  if (!sourceId) { setStatus('Pehle source paper ID daalen (jiska result upload hua ho).'); return; }
+  setStatus('Class ki kamzoriyon se adaptive paper ban raha hai...');
+  const body = {
+    source_paper_id: sourceId,
+    total_questions: parseInt(val('totalQuestions')),
+    difficulty: val('difficulty'),
+  };
+  try {
+    const res = await fetch('/api/generate-adaptive-paper', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Error');
+    currentPaperId = data.paper_id;
+    document.getElementById('printBtn').style.display = 'inline-block';
+    document.getElementById('dashboardBtn').style.display = 'inline-block';
+    setStatus(`Adaptive paper ban gaya — Total marks: ${data.total_marks}`);
+    renderAdaptiveSummary(data.adaptive_summary);
+    renderBalanceSummary(data.balance_summary);
+    renderQuestions(data.questions);
+  } catch (e) {
+    setStatus('Error: ' + e.message);
+  }
+}
+
+// Why the paper looks the way it does: weakest Bloom levels first, with how
+// many questions each earned.
+function renderAdaptiveSummary(summary) {
+  const el = document.getElementById('adaptiveSummary');
+  if (!summary || !summary.length) { el.innerHTML = ''; return; }
+  const rows = summary.map(s => {
+    const weak = s.average_percent < 50;
+    return `<tr>
+      <td>${s.bloom_level}</td>
+      <td style="text-align:right;color:${weak ? '#b3261e' : '#1d6e56'}">${s.average_percent}%</td>
+      <td style="text-align:right"><strong>${s.questions_allocated}</strong></td>
+    </tr>`;
+  }).join('');
+  el.innerHTML = `
+    <div style="border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-top:14px;background:#f4f1fa">
+      <div style="font-weight:600;margin-bottom:6px">Adaptive focus (weakest Bloom levels pehle)</div>
+      <table style="width:100%;border-collapse:collapse;font-size:14px">
+        <thead><tr>
+          <th style="text-align:left">Bloom level</th>
+          <th style="text-align:right">Class avg</th>
+          <th style="text-align:right">Questions</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 }
 
 function renderQuestions(questions) {

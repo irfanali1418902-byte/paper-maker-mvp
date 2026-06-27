@@ -2,8 +2,8 @@
 
 from fastapi import APIRouter, File, HTTPException, Response, UploadFile
 
-from app.models.requests import GeneratePaperRequest
-from app.models.responses import GeneratePaperResponse, PaperResponse
+from app.models.requests import AdaptivePaperRequest, GeneratePaperRequest
+from app.models.responses import AdaptivePaperResponse, GeneratePaperResponse, PaperResponse
 from app.services import paper_service, result_service
 from app.services.exceptions import ResultsValidationError
 
@@ -25,6 +25,27 @@ def generate_paper(req: GeneratePaperRequest):
         raise HTTPException(
             status_code=404,
             detail="Is subject/Bloom-level ke liye question bank khali hai. Pehle /api/generate-questions se questions banayen.",
+        )
+    return result
+
+
+@router.post("/api/generate-adaptive-paper", response_model=AdaptivePaperResponse)
+def generate_adaptive_paper(req: AdaptivePaperRequest):
+    """Source paper ke latest results se class ki kamzor Bloom levels nikaal kar
+    un par zyada weight wala naya paper banata hai (Phase 3 adaptive)."""
+    try:
+        result = paper_service.assemble_adaptive_paper(req)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Adaptive paper assemble fail hui (DB error): {e}"
+        ) from e
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Adaptive paper nahi ban saka. Source paper ya uske results nahi mile, "
+                "ya in Bloom-levels ke liye question bank khali hai."
+            ),
         )
     return result
 
