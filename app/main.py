@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api import dashboard, papers, questions, school_settings, syllabus
+from app.api import dashboard, export, papers, questions, school_settings, syllabus
 from app.core.database import init_db
 
 app = FastAPI(title="AII Smart Paper Maker - Phase 1")
@@ -27,6 +27,7 @@ init_db()
 app.include_router(questions.router)
 app.include_router(papers.router)
 app.include_router(dashboard.router)
+app.include_router(export.router)
 app.include_router(syllabus.router)
 app.include_router(school_settings.router)
 

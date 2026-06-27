@@ -10,3 +10,4 @@ pre-commit
 pandas
 openpyxl
 python-multipart
+python-docx

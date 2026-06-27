@@ -19,3 +19,10 @@ class ResultsValidationError(Exception):
     def __init__(self, errors: list[dict]):
         self.errors = errors
         super().__init__(f"{len(errors)} validation error(s) in results file")
+
+
+class PdfConversionFailed(Exception):
+    """Raised by export_service when the docx->PDF step fails — typically
+    because LibreOffice (soffice) isn't installed/found on the server, or the
+    conversion subprocess errored or timed out. The route maps this to 502
+    (upstream tool failure) with the message surfaced to the admin."""
