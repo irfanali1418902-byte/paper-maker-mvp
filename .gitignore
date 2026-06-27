@@ -11,3 +11,6 @@ __pycache__/
 # Virtual environment
 .venv/
 .claude/
+
+# Claude Code setup/onboarding scaffolding (not application code)
+paper-maker-claude-setup/
