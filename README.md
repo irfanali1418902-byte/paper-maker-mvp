@@ -1,8 +1,13 @@
-# AII Smart Paper Maker — Phase 1 MVP
+# AII Smart Paper Maker
 
-Ye Phase 1 ka core engine hai: AI se Bloom-tagged bilingual (Urdu+English)
-question generate karna, SQLite question bank mein save karna, aur usse
-balanced exam paper assemble karna.
+AI se Bloom-tagged bilingual (Urdu+English) question generate karna, SQLite
+question bank mein save karna, balanced exam paper assemble karna, student
+results analyze karna (P-value / D-index item analysis ke saath), aur class ki
+kamzoriyon se **adaptive paper** banana.
+
+Phases: ✅ Phase 1 (core engine) · ✅ Phase 2 (dashboard + export) ·
+✅ Phase 2.5 (item analysis) · ✅ Phase 3 (adaptive generation). Tafseel
+`CLAUDE.md` mein.
 
 ## Files
 
@@ -10,15 +15,20 @@ Code layered structure mein hai (routes -> services -> repositories -> core).
 Full rules `ARCHITECTURE.md` aur `CLAUDE.md` mein hain.
 
 - `app/main.py` — FastAPI app entry point (routers mount + static + `init_db`)
-- `app/api/` — HTTP route handlers (`questions`, `papers`, `syllabus`, `school_settings`)
+- `app/api/` — HTTP route handlers (`questions`, `papers`, `dashboard`, `export`,
+  `syllabus`, `school_settings`)
 - `app/services/` — Business logic: Bloom distribution + marks (`bloom_service`),
   AI provider (`ai_service`), orchestration (`question_service`, `paper_service`,
-  `syllabus_service`, `settings_service`)
+  `syllabus_service`, `settings_service`), results + analytics (`result_service`,
+  `dashboard_service`), item analysis P-value/D-index (`item_analysis_service`),
+  adaptive generation (`adaptive_service`), export (`export_service`)
 - `app/repositories/` — SQLite access — sirf yahan SQL strings hain
 - `app/core/database.py` — Connection factory + schema bootstrap + migrations
-- `app/models/requests.py` — Pydantic request shapes
+- `app/models/` — Pydantic request + response shapes
 - `import_syllabus.py` — CSV se syllabus topics import karne wala CLI
-- `static/index.html` — Testing ke liye simple bilingual frontend
+- `seed_large_class.py` — engineered ≥10-student results seed (D-index flags test karne ke liye)
+- `static/index.html` — paper maker + adaptive frontend
+- `static/dashboard.html` — result analyzer dashboard (rankings, P-value, D-index, flags)
 
 ## Setup (apne computer/VPS par)
 
@@ -61,18 +71,26 @@ Full rules `ARCHITECTURE.md` aur `CLAUDE.md` mein hain.
 ## Kaise use karen
 
 1. Subject + Topic likhen (e.g. Mathematics / Fractions)
-2. "Generate questions (AI)" dabayen — ye Claude API se bilingual,
+2. "Generate questions (AI)" dabayen — ye Claude/Gemini API se bilingual,
    Bloom-tagged questions banayega aur SQLite mein save karega
-3. "Build paper from bank" dabayen — ye database se balanced distribution
-   ke hisaab se paper assemble karega
+3. "Build paper from bank" dabayen — balanced distribution ke hisaab se paper
+   assemble hoga (har question par expected difficulty + paper balance summary)
+4. Print/PDF ya Word export karen, ya `/dashboard.html` par results upload kar ke
+   class performance dekhen (rankings, P-value, D-index, bad-question flags)
+5. "Generate adaptive paper" — kisi paper ke uploaded results se class ki weak
+   Bloom levels nikaal kar un par focus karta naya paper banata hai
+
+Reproducible test data (D-index flags dekhne ke liye, ≥10 students chahiye):
+```
+python seed_large_class.py <paper_id>
+```
 
 ## Agla kaam (jo abhi nahi hai)
 
-- Word/PDF export (aapka existing python-docx + Urdu font pipeline yahan
-  plug karna hai)
 - Syllabus PDF upload se topics auto-extract karna
-- Performance analyzer (Phase 2)
-- Adaptive paper generation (Phase 3)
+- Per-student adaptive papers (abhi whole-class weakness par based hai)
+- Topic-level weakness targeting (abhi Bloom-level par based hai)
+- Adaptive: weak level mein question bank khali ho to AI se auto-generate
 
 ## Note
 
