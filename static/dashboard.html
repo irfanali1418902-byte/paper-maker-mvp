@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AII Smart Paper Maker — Result Dashboard</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 980px; margin: 40px auto; padding: 0 20px; color: #222; }
+  a { color: #1d6e56; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  h2 { font-size: 17px; margin-top: 34px; border-bottom: 2px solid #eee; padding-bottom: 6px; }
+  p.sub { color: #666; font-size: 14px; margin-top: 0; }
+  label { display: block; margin-top: 14px; font-weight: 600; font-size: 14px; }
+  input, select { width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+  button { margin-top: 14px; padding: 10px 18px; background: #1d6e56; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+  button:hover { background: #155340; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+  .row > div { flex: 1; min-width: 220px; }
+
+  #status { margin-top: 14px; font-size: 14px; min-height: 20px; }
+  #status.error { color: #b3261e; }
+  #status.ok { color: #1d6e56; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 14px; }
+  .card { border: 1px solid #ddd; border-radius: 8px; padding: 14px; background: #f7faf9; }
+  .card .value { font-size: 24px; font-weight: 700; color: #1d6e56; }
+  .card .caption { font-size: 12px; color: #777; margin-top: 4px; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #eee; }
+  th { background: #f2f5f4; font-size: 13px; }
+  tr:hover td { background: #fafcfb; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .badge.pass { background: #e3f3ec; color: #1d6e56; }
+  .badge.fail { background: #fbe4e2; color: #b3261e; }
+  .medal { font-size: 15px; }
+
+  /* Horizontal bar used for question + bloom averages */
+  .bar-wrap { background: #eee; border-radius: 5px; height: 16px; width: 140px; overflow: hidden; display: inline-block; vertical-align: middle; }
+  .bar { height: 100%; border-radius: 5px; }
+  .bar.good { background: #2e9e6e; }
+  .bar.mid { background: #e0a33a; }
+  .bar.weak { background: #d4584c; }
+
+  .hidden { display: none; }
+  .empty { color: #888; font-size: 14px; margin-top: 12px; }
+</style>
+</head>
+<body>
+  <h1>📊 Result Analyzer Dashboard</h1>
+  <p class="sub">Student results, class ranking aur Bloom-level breakdown — ek paper ke uploaded results se. <a href="/">← Paper maker pe wapas</a></p>
+
+  <div class="row">
+    <div>
+      <label for="paperId">Paper ID</label>
+      <input id="paperId" placeholder="paper assemble karne ke baad jo ID milti hai" />
+    </div>
+    <div style="flex:0 0 auto">
+      <button onclick="loadLatest()">Dashboard dekhen</button>
+    </div>
+  </div>
+
+  <div id="uploadPicker" class="hidden">
+    <label for="uploadSelect">Kaunsa upload (newest pehle)</label>
+    <select id="uploadSelect" onchange="onUploadChange()"></select>
+  </div>
+
+  <div id="status"></div>
+
+  <div id="dashboard" class="hidden">
+    <h2>Class summary</h2>
+    <div id="cards" class="cards"></div>
+
+    <h2>Student results &amp; ranking</h2>
+    <div id="studentsWrap"></div>
+
+    <h2>Per-question difficulty</h2>
+    <p class="sub">Kam average % = class ne is sawaal mein struggle kiya.</p>
+    <div id="questionsWrap"></div>
+
+    <h2>Bloom's Taxonomy breakdown</h2>
+    <p class="sub">Kaunse cognitive levels kamzor hain — marks-weighted average.</p>
+    <div id="bloomWrap"></div>
+  </div>
+
+<script>
+// Canonical Bloom order (lowest → highest cognitive level) for stable display.
+const BLOOM_ORDER = ["REMEMBER", "UNDERSTAND", "APPLY", "ANALYZE", "EVALUATE", "CREATE"];
+
+let currentPaperId = null;
+
+function setStatus(msg, kind) {
+  const el = document.getElementById("status");
+  el.textContent = msg || "";
+  el.className = kind || "";
+}
+
+function show(id) { document.getElementById(id).classList.remove("hidden"); }
+function hide(id) { document.getElementById(id).classList.add("hidden"); }
+
+// Pull `detail` out of an error response the canonical-pattern way: the API
+// always returns JSON, so parse it for the user-facing message. If the body
+// isn't JSON (e.g. a proxy returned a bare "Not Found"), fall back to the
+// status so the user never sees a cryptic statusText.
+async function readError(res) {
+  try {
+    const data = await res.json();
+    if (data && data.detail != null) {
+      return typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail);
+    }
+  } catch {
+    // body wasn't JSON — fall through to the status-based message
+  }
+  return `HTTP ${res.status} (${res.statusText || "request failed"})`;
+}
+
+// Entry point: load the paper's latest upload, then populate the upload picker
+// so the teacher can switch to older uploads.
+async function loadLatest() {
+  const paperId = document.getElementById("paperId").value.trim();
+  if (!paperId) { setStatus("Pehle paper ID daalen.", "error"); return; }
+  currentPaperId = paperId;
+  hide("dashboard");
+  hide("uploadPicker");
+  setStatus("Dashboard load ho raha hai...", "");
+
+  try {
+    const res = await fetch(`/api/paper/${encodeURIComponent(paperId)}/dashboard`);
+    if (res.status === 404) {
+      // Paper hai hi nahi, ya hai par abhi koi result upload nahi hua — dono
+      // surat mein teacher ko yehi karna hai: pehle CSV upload karo.
+      setStatus(
+        `Is paper ID ke liye koi result dashboard nahi mila. Ya to paper ID galat hai, ya is paper ke results abhi upload nahi hue — pehle filled CSV upload karein, phir yahan dekhein.`,
+        "error"
+      );
+      return;
+    }
+    if (!res.ok) throw new Error(await readError(res));
+    const data = await res.json();
+    await populateUploadPicker(paperId, data.upload.id);
+    render(data);
+    setStatus("", "ok");
+  } catch (e) {
+    setStatus("Error: " + e.message, "error");
+  }
+}
+
+// Fetch all uploads for the paper and select the one currently shown.
+async function populateUploadPicker(paperId, selectedUploadId) {
+  const res = await fetch(`/api/paper/${encodeURIComponent(paperId)}/uploads`);
+  if (!res.ok) return; // dashboard already loaded; picker is a nicety
+  const data = await res.json();
+  const select = document.getElementById("uploadSelect");
+  select.innerHTML = "";
+  data.uploads.forEach(u => {
+    const opt = document.createElement("option");
+    opt.value = u.id;
+    opt.textContent = `${u.filename} — ${formatDate(u.uploaded_at)}`;
+    if (u.id === selectedUploadId) opt.selected = true;
+    select.appendChild(opt);
+  });
+  if (data.uploads.length > 1) show("uploadPicker");
+}
+
+async function onUploadChange() {
+  const uploadId = document.getElementById("uploadSelect").value;
+  setStatus("Upload switch ho raha hai...", "");
+  try {
+    const res = await fetch(`/api/upload/${encodeURIComponent(uploadId)}/dashboard`);
+    if (!res.ok) throw new Error(await readError(res));
+    render(await res.json());
+    setStatus("", "ok");
+  } catch (e) {
+    setStatus("Error: " + e.message, "error");
+  }
+}
+
+function render(data) {
+  renderCards(data.summary);
+  renderStudents(data.students);
+  renderQuestions(data.questions);
+  renderBlooms(data.bloom_breakdown);
+  show("dashboard");
+}
+
+function renderCards(s) {
+  const cards = [
+    { value: s.student_count, caption: "Students" },
+    { value: pct(s.class_average_percent), caption: `Class average (${s.class_average_marks}/${s.total_marks})` },
+    { value: pct(s.pass_percent), caption: `Pass rate (${s.pass_count} pass, ≥${s.pass_threshold_percent}%)` },
+    { value: pct(s.highest_percent), caption: "Highest" },
+    { value: pct(s.lowest_percent), caption: "Lowest" },
+  ];
+  document.getElementById("cards").innerHTML = cards.map(c => `
+    <div class="card">
+      <div class="value">${c.value}</div>
+      <div class="caption">${c.caption}</div>
+    </div>`).join("");
+}
+
+function renderStudents(students) {
+  const wrap = document.getElementById("studentsWrap");
+  if (!students.length) { wrap.innerHTML = `<p class="empty">Is upload mein koi student result nahi.</p>`; return; }
+  const rows = students.map(st => {
+    const passed = st.percent >= 33;
+    return `
+      <tr>
+        <td>${medal(st.rank)} ${st.rank}</td>
+        <td>${escapeHtml(st.roll_no)}</td>
+        <td>${escapeHtml(st.student_name || "—")}</td>
+        <td class="num">${st.marks_obtained}/${st.total_marks}</td>
+        <td class="num">${pct(st.percent)}</td>
+        <td><span class="badge ${passed ? "pass" : "fail"}">${passed ? "Pass" : "Fail"}</span></td>
+      </tr>`;
+  }).join("");
+  wrap.innerHTML = `
+    <table>
+      <thead><tr><th>Rank</th><th>Roll no</th><th>Name</th><th class="num">Marks</th><th class="num">%</th><th>Result</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function renderQuestions(questions) {
+  const wrap = document.getElementById("questionsWrap");
+  if (!questions.length) { wrap.innerHTML = `<p class="empty">Koi question data nahi.</p>`; return; }
+  const rows = questions.map(q => `
+    <tr>
+      <td>Q${q.question_index}</td>
+      <td>${escapeHtml(q.bloom_level)}</td>
+      <td class="num">${q.average_marks}/${q.max_marks}</td>
+      <td>${barCell(q.average_percent)}</td>
+      <td class="num">${q.full_marks_count}/${q.student_count}</td>
+    </tr>`).join("");
+  wrap.innerHTML = `
+    <table>
+      <thead><tr><th>Question</th><th>Bloom</th><th class="num">Avg marks</th><th>Avg %</th><th class="num">Full marks</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function renderBlooms(blooms) {
+  const wrap = document.getElementById("bloomWrap");
+  if (!blooms.length) { wrap.innerHTML = `<p class="empty">Koi Bloom data nahi.</p>`; return; }
+  // Sort into canonical cognitive order; unknown levels fall to the end.
+  const sorted = [...blooms].sort((a, b) => bloomRank(a.bloom_level) - bloomRank(b.bloom_level));
+  const rows = sorted.map(b => `
+    <tr>
+      <td>${escapeHtml(b.bloom_level)}</td>
+      <td class="num">${b.question_count}</td>
+      <td class="num">${b.average_marks}/${b.max_marks}</td>
+      <td>${barCell(b.average_percent)}</td>
+    </tr>`).join("");
+  wrap.innerHTML = `
+    <table>
+      <thead><tr><th>Bloom level</th><th class="num">Questions</th><th class="num">Avg marks</th><th>Avg %</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ---- small helpers ----------------------------------------------------------
+
+function barCell(percent) {
+  const cls = percent >= 60 ? "good" : percent >= 40 ? "mid" : "weak";
+  return `<span class="bar-wrap"><span class="bar ${cls}" style="width:${Math.max(0, Math.min(100, percent))}%"></span></span> ${pct(percent)}`;
+}
+
+function bloomRank(level) {
+  const i = BLOOM_ORDER.indexOf((level || "").toUpperCase());
+  return i === -1 ? BLOOM_ORDER.length : i;
+}
+
+function medal(rank) {
+  return rank === 1 ? `<span class="medal">🥇</span>` : rank === 2 ? `<span class="medal">🥈</span>` : rank === 3 ? `<span class="medal">🥉</span>` : "";
+}
+
+function pct(n) { return `${n}%`; }
+
+function formatDate(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return isNaN(d) ? iso : d.toLocaleString();
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// Pre-fill from ?paper_id=... so the paper maker can deep-link here, and
+// auto-load if present.
+(function init() {
+  const params = new URLSearchParams(window.location.search);
+  const paperId = params.get("paper_id");
+  if (paperId) {
+    document.getElementById("paperId").value = paperId;
+    loadLatest();
+  }
+})();
+</script>
+</body>
+</html>

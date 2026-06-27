@@ -84,6 +84,7 @@
   <button onclick="generateQuestions()">1. Generate questions (AI)</button>
   <button onclick="buildPaper()">2. Build paper from bank</button>
   <button id="printBtn" style="display:none;background:#a9722f" onclick="openPrintView()">3. Print / PDF dekhen</button>
+  <button id="dashboardBtn" style="display:none;background:#2a5d8f" onclick="openDashboard()">4. Result dashboard dekhen</button>
 
   <div id="status"></div>
   <div id="results"></div>
@@ -148,6 +149,11 @@ async function loadSchoolSettings() {
 function openPrintView() {
   if (!currentPaperId) return;
   window.open(`/print.html?paper_id=${currentPaperId}`, '_blank');
+}
+
+function openDashboard() {
+  if (!currentPaperId) return;
+  window.open(`/dashboard.html?paper_id=${currentPaperId}`, '_blank');
 }
 
 loadSchoolSettings();
@@ -255,6 +261,7 @@ async function buildPaper() {
     if (!res.ok) throw new Error(data.detail || 'Error');
     currentPaperId = data.paper_id;
     document.getElementById('printBtn').style.display = 'inline-block';
+    document.getElementById('dashboardBtn').style.display = 'inline-block';
     setStatus(`Paper ban gaya — Total marks: ${data.total_marks}`);
     renderQuestions(data.questions);
   } catch (e) {
