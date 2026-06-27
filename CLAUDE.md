@@ -8,6 +8,9 @@ defines the layering). If anything here ever conflicts with
 The rules below are not stylistic preferences. Each one exists because we
 have either hit the bug it prevents, or are about to.
 
+For project status, completed phases, the API endpoint list, and build
+commands, see @PROJECT.md.
+
 ---
 
 ## 1. Naming
