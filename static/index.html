@@ -87,6 +87,7 @@
   <button id="dashboardBtn" style="display:none;background:#2a5d8f" onclick="openDashboard()">4. Result dashboard dekhen</button>
 
   <div id="status"></div>
+  <div id="balanceSummary"></div>
   <div id="results"></div>
 
 <script>
@@ -263,6 +264,7 @@ async function buildPaper() {
     document.getElementById('printBtn').style.display = 'inline-block';
     document.getElementById('dashboardBtn').style.display = 'inline-block';
     setStatus(`Paper ban gaya — Total marks: ${data.total_marks}`);
+    renderBalanceSummary(data.balance_summary);
     renderQuestions(data.questions);
   } catch (e) {
     setStatus('Error: ' + e.message);
@@ -283,10 +285,36 @@ function renderQuestions(questions) {
       <div class="ur">${q.question_ur || ''}</div>
       ${visual}
       <ul>${optsEn.map((o, idx) => `<li>${o}${optsUr[idx] ? ' — <span class="ur" style="font-size:15px">' + optsUr[idx] + '</span>' : ''}</li>`).join('')}</ul>
-      <div class="meta">Bloom: ${q.bloom_level} | Difficulty: ${q.difficulty} | Marks: ${q.marks}</div>
+      <div class="meta">Bloom: ${q.bloom_level} | Difficulty: ${q.difficulty} | Expected: ${expectedBadge(q)} | Marks: ${q.marks}</div>
     `;
     container.appendChild(card);
   });
+}
+
+// Bloom-derived expected difficulty, with a warning when it disagrees with
+// the difficulty the question was tagged with at generation time.
+function expectedBadge(q) {
+  const exp = q.expected_difficulty || '—';
+  if (q.difficulty_mismatch) {
+    return `<span style="color:#a9722f;font-weight:600">${exp} ⚠️ (tagged ${q.difficulty})</span>`;
+  }
+  return `<span style="color:#1d6e56;font-weight:600">${exp}</span>`;
+}
+
+// Paper-level Easy/Medium/Hard balance, derived from each question's Bloom
+// level — teacher ek nazar mein dekh le ke paper kitna balanced hai.
+function renderBalanceSummary(summary) {
+  const el = document.getElementById('balanceSummary');
+  if (!summary || !summary.total_questions) { el.innerHTML = ''; return; }
+  const band = (label, b, color) =>
+    `<span style="display:inline-block;margin-right:14px"><strong style="color:${color}">${label}:</strong> ${b.count} (${b.percent}%)</span>`;
+  el.innerHTML = `
+    <div style="border:1px solid #ddd;border-radius:8px;padding:12px 14px;margin-top:14px;background:#f7faf9">
+      <div style="font-weight:600;margin-bottom:6px">Paper balance (Bloom-expected difficulty)</div>
+      ${band('Easy', summary.easy, '#1d6e56')}
+      ${band('Medium', summary.medium, '#a9722f')}
+      ${band('Hard', summary.hard, '#b3261e')}
+    </div>`;
 }
 
 function val(id) { return document.getElementById(id).value; }

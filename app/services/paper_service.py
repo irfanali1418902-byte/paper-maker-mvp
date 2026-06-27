@@ -5,7 +5,7 @@ import uuid
 
 from app.models.requests import GeneratePaperRequest
 from app.repositories import papers_repository, questions_repository
-from app.services import bloom_service
+from app.services import bloom_service, item_analysis_service
 
 
 def assemble_balanced_paper(req: GeneratePaperRequest) -> dict | None:
@@ -35,6 +35,8 @@ def assemble_balanced_paper(req: GeneratePaperRequest) -> dict | None:
     if not selected_questions:
         return None
 
+    _annotate_expected_difficulty(selected_questions)
+
     paper_id = str(uuid.uuid4())
     total_marks = sum(q["marks"] for q in selected_questions)
     papers_repository.insert(
@@ -44,7 +46,12 @@ def assemble_balanced_paper(req: GeneratePaperRequest) -> dict | None:
         total_marks=total_marks,
         question_ids=selected_ids,
     )
-    return {"paper_id": paper_id, "total_marks": total_marks, "questions": selected_questions}
+    return {
+        "paper_id": paper_id,
+        "total_marks": total_marks,
+        "questions": selected_questions,
+        "balance_summary": item_analysis_service.summarize_paper_balance(selected_questions),
+    }
 
 
 def get_paper_with_questions(paper_id: str) -> dict | None:
@@ -57,4 +64,19 @@ def get_paper_with_questions(paper_id: str) -> dict | None:
         q = questions_repository.find_by_id(qid)
         if q:
             questions.append(q)
-    return {"paper": paper, "questions": questions}
+    _annotate_expected_difficulty(questions)
+    return {
+        "paper": paper,
+        "questions": questions,
+        "balance_summary": item_analysis_service.summarize_paper_balance(questions),
+    }
+
+
+def _annotate_expected_difficulty(questions: list[dict]) -> None:
+    """Har question dict mein Bloom-derived expected_difficulty aur stored
+    difficulty ke saath mismatch flag add karta hai (in-place)."""
+    for q in questions:
+        q["expected_difficulty"] = item_analysis_service.expected_difficulty(q["bloom_level"])
+        q["difficulty_mismatch"] = item_analysis_service.is_difficulty_mismatch(
+            q.get("difficulty"), q["bloom_level"]
+        )

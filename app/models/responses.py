@@ -56,6 +56,30 @@ class Paper(BaseModel):
     created_at: Optional[str] = None
 
 
+class PaperQuestion(Question):
+    """A Question as it appears inside a paper — DB row plus the Phase A
+    item-analysis annotations the paper service derives (not DB columns)."""
+
+    expected_difficulty: Optional[str] = None  # Bloom-derived Easy/Medium/Hard
+    difficulty_mismatch: Optional[bool] = None  # stored difficulty != expected
+
+
+class BalanceBand(BaseModel):
+    """One difficulty band's share of a paper."""
+
+    count: int
+    percent: float
+
+
+class PaperBalanceSummary(BaseModel):
+    """Phase A: count + percent of questions per expected difficulty band."""
+
+    total_questions: int
+    easy: BalanceBand
+    medium: BalanceBand
+    hard: BalanceBand
+
+
 class SyllabusTopic(BaseModel):
     """syllabus_topics row, plus a derived 'suggested_difficulty' annotation
     that the service layer adds."""
@@ -91,14 +115,16 @@ class GenerateQuestionsResponse(BaseModel):
 class GeneratePaperResponse(BaseModel):
     paper_id: str
     total_marks: int
-    questions: List[Question]
+    questions: List[PaperQuestion]
+    balance_summary: PaperBalanceSummary
 
 
 class PaperResponse(BaseModel):
     """GET /api/paper/{paper_id} ka response: poora paper + sab questions."""
 
     paper: Paper
-    questions: List[Question]
+    questions: List[PaperQuestion]
+    balance_summary: PaperBalanceSummary
 
 
 class StatusResponse(BaseModel):
