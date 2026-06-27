@@ -106,3 +106,77 @@ class StatusResponse(BaseModel):
     return nahi karte (e.g. POST /api/school-settings)."""
 
     status: str
+
+
+# ---- Result analyzer dashboard (Phase 2) ------------------------------------
+
+
+class ResultUpload(BaseModel):
+    """One row of result_uploads — a single results sheet a teacher uploaded."""
+
+    id: str
+    paper_id: str
+    filename: str
+    uploaded_at: Optional[str] = None
+
+
+class UploadsResponse(BaseModel):
+    """GET /api/paper/{paper_id}/uploads — newest upload first."""
+
+    uploads: List[ResultUpload]
+
+
+class StudentResult(BaseModel):
+    """Per-student total for one upload, with class rank (ties share a rank)."""
+
+    roll_no: str
+    student_name: Optional[str] = None
+    marks_obtained: int
+    total_marks: int
+    percent: float
+    rank: int
+
+
+class QuestionStat(BaseModel):
+    """Per-question difficulty signal — low average_percent = class struggled."""
+
+    question_index: int
+    question_id: str
+    bloom_level: str
+    max_marks: int
+    student_count: int
+    average_marks: float
+    average_percent: float
+    full_marks_count: int
+
+
+class BloomStat(BaseModel):
+    """Per-Bloom-level rollup — which cognitive levels the class is weak on."""
+
+    bloom_level: str
+    question_count: int
+    max_marks: int
+    average_marks: float
+    average_percent: float
+
+
+class DashboardSummary(BaseModel):
+    student_count: int
+    total_marks: int
+    class_average_marks: float
+    class_average_percent: float
+    highest_percent: float
+    lowest_percent: float
+    pass_count: int
+    pass_percent: float
+    pass_threshold_percent: float
+
+
+class DashboardResponse(BaseModel):
+    """Full analyzer dashboard for one upload."""
+
+    upload: ResultUpload
+    summary: DashboardSummary
+    students: List[StudentResult]
+    questions: List[QuestionStat]
+    bloom_breakdown: List[BloomStat]
