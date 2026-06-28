@@ -26,6 +26,16 @@ BLOOM_LEVELS = {
 }
 
 
+def resolve_distribution_type(requested: str, difficulty: str) -> str:
+    """Easy papers default to a foundational (lower-order) Bloom spread so the
+    questions actually sit at the difficulty the teacher asked for. An explicit
+    non-default choice (foundational/advanced) is left untouched — only the
+    neutral 'balanced' default gets steered by difficulty."""
+    if difficulty == "easy" and requested == "balanced":
+        return "foundational"
+    return requested
+
+
 def calculate_bloom_distribution(dist_type: str, total_questions: int) -> dict:
     """Given a distribution type (balanced/foundational/advanced) and a total
     question count, returns how many questions should belong to each Bloom

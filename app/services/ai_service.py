@@ -20,6 +20,7 @@ import requests
 from dotenv import load_dotenv
 
 from app.repositories import usage_log_repository
+from app.services.exceptions import AIGenerationFailed
 
 # Project root ki .env file se GEMINI_API_KEY / ANTHROPIC_API_KEY load karta
 # hai. Ye line module-level os.environ.get() calls se PEHLE chalni zaroori
@@ -37,6 +38,30 @@ GEMINI_API_URL = (
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_MODEL = "claude-sonnet-4-6"
 
+# Difficulty sirf marks ka multiplier nahi — har level ki cognitive gehraai
+# ko bhi shape karti hai. Distribution counts authoritative rehti hain; ye
+# guidance batati hai ke un counts ke andar har question kitna gehra ho.
+DIFFICULTY_GUIDANCE = {
+    "easy": (
+        "Natural emphasis: REMEMBER and UNDERSTAND. Single-step reasoning, "
+        "short direct wording, vocabulary a struggling student can follow. "
+        "If the distribution requires a higher level (APPLY/ANALYZE/EVALUATE/"
+        "CREATE), make it the gentlest possible version of that level — one "
+        "familiar step, no trick wording."
+    ),
+    "medium": (
+        "Natural emphasis: UNDERSTAND, APPLY, and light ANALYZE. Two-step "
+        "reasoning is fine; keep wording clear and avoid trick phrasing. "
+        "Lower levels stay concrete; higher levels stay grounded in a single "
+        "familiar context."
+    ),
+    "hard": (
+        "Natural emphasis: ANALYZE, EVALUATE, and CREATE. Multi-step reasoning "
+        "that connects ideas or justifies a position. Even REMEMBER/UNDERSTAND "
+        "questions should demand precise recall or a subtle distinction."
+    ),
+}
+
 
 def build_prompt(
     topic: str, subject: str, bloom_distribution: dict, question_types: list, difficulty: str
@@ -45,6 +70,7 @@ def build_prompt(
         f"- {level}: {count} questions" for level, count in bloom_distribution.items() if count > 0
     )
     types_str = ", ".join(question_types)
+    difficulty_guidance = DIFFICULTY_GUIDANCE.get(difficulty, DIFFICULTY_GUIDANCE["medium"])
 
     return f"""You are an expert bilingual (English + Urdu) educational content creator for a school in Swat, Pakistan, specializing in Bloom's Taxonomy-based question design.
 
@@ -53,12 +79,15 @@ TOPIC: {topic}
 DIFFICULTY: {difficulty}
 QUESTION TYPES TO USE: {types_str}
 
+DIFFICULTY CALIBRATION:
+{difficulty_guidance}
+
 GENERATE QUESTIONS WITH THIS BLOOM'S TAXONOMY DISTRIBUTION:
 {bloom_lines}
 
 INSTRUCTIONS:
 1. Every question must be written in BOTH English and proper Urdu script (not Roman Urdu).
-2. Tag every question with its correct Bloom level from: REMEMBER, UNDERSTAND, APPLY, ANALYZE, EVALUATE, CREATE.
+2. Tag every question with its correct Bloom level from: REMEMBER, UNDERSTAND, APPLY, ANALYZE, EVALUATE, CREATE. Each question's cognitive depth must match the DIFFICULTY CALIBRATION above while still honouring the requested Bloom distribution counts.
 3. For multiple-choice questions, include exactly 4 options (English and Urdu) with one correct answer.
 4. Provide a short explanation for the correct answer, in both languages.
 5. Keep language age-appropriate for school students.
@@ -89,6 +118,20 @@ RESPONSE FORMAT (JSON ONLY):
     }}
   ]
 }}"""
+
+
+def _provider_error_message(provider: str, err: Exception) -> str:
+    """Turn a requests-level failure into a short, key-free message safe to
+    show a teacher. Never include the URL or response body — the Gemini URL
+    used to carry the API key, and provider error bodies can echo it back."""
+    status = getattr(getattr(err, "response", None), "status_code", None)
+    if status in (429, 503):
+        return (
+            f"{provider} abhi busy/overloaded hai (HTTP {status}). Thodi der baad dobara try karen."
+        )
+    if status:
+        return f"{provider} ne error diya (HTTP {status}). Thodi der baad dobara try karen."
+    return f"{provider} se connect nahi ho saka (network/timeout). Dobara try karen."
 
 
 def _extract_json(text: str) -> list:
@@ -122,16 +165,21 @@ def _extract_json(text: str) -> list:
 
 
 def _generate_with_gemini(prompt: str) -> list:
-    response = requests.post(
-        f"{GEMINI_API_URL}?key={GEMINI_API_KEY}",
-        headers={"Content-Type": "application/json"},
-        json={
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {"temperature": 0.7, "maxOutputTokens": 16000},
-        },
-        timeout=60,
-    )
-    response.raise_for_status()
+    # Key header mein bhejte hain (URL mein nahi) taake kisi error message ya
+    # log mein leak na ho — pehle ?key= URL mein tha aur 503 par expose ho raha tha.
+    try:
+        response = requests.post(
+            GEMINI_API_URL,
+            headers={"Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY},
+            json={
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"temperature": 0.7, "maxOutputTokens": 16000},
+            },
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        raise AIGenerationFailed(_provider_error_message("Gemini", e)) from e
     data = response.json()
 
     # Billing-grade usage log lands here — provider already charged for the
@@ -155,21 +203,24 @@ def _generate_with_gemini(prompt: str) -> list:
 
 
 def _generate_with_claude(prompt: str) -> list:
-    response = requests.post(
-        ANTHROPIC_API_URL,
-        headers={
-            "x-api-key": ANTHROPIC_API_KEY,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
-        },
-        json={
-            "model": ANTHROPIC_MODEL,
-            "max_tokens": 8000,
-            "messages": [{"role": "user", "content": prompt}],
-        },
-        timeout=60,
-    )
-    response.raise_for_status()
+    try:
+        response = requests.post(
+            ANTHROPIC_API_URL,
+            headers={
+                "x-api-key": ANTHROPIC_API_KEY,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": ANTHROPIC_MODEL,
+                "max_tokens": 8000,
+                "messages": [{"role": "user", "content": prompt}],
+            },
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        raise AIGenerationFailed(_provider_error_message("Claude", e)) from e
     data = response.json()
 
     # Anthropic returns input + output tokens separately; compute total

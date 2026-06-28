@@ -21,6 +21,13 @@ class ResultsValidationError(Exception):
         super().__init__(f"{len(errors)} validation error(s) in results file")
 
 
+class AIGenerationFailed(Exception):
+    """Raised by ai_service when an AI provider call fails (HTTP error,
+    timeout, network drop, or unparseable response). The message is already
+    user-facing and sanitized — it never contains the request URL or API key,
+    so the route can surface it straight to the teacher (CLAUDE.md §2, §6)."""
+
+
 class PdfConversionFailed(Exception):
     """Raised by export_service when the docx->PDF step fails — typically
     because LibreOffice (soffice) isn't installed/found on the server, or the

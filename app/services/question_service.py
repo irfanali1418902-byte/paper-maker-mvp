@@ -13,9 +13,8 @@ def generate_for_topic(req: GenerateQuestionsRequest) -> list[dict]:
     requested Bloom distribution. Returns the raw AI-generated dicts —
     persistence is a separate step so the route can distinguish AI failure
     (502) from DB failure (500)."""
-    distribution = bloom_service.calculate_bloom_distribution(
-        req.bloom_distribution, req.total_questions
-    )
+    dist_type = bloom_service.resolve_distribution_type(req.bloom_distribution, req.difficulty)
+    distribution = bloom_service.calculate_bloom_distribution(dist_type, req.total_questions)
     return ai_service.generate_questions_from_ai(
         topic=req.topic,
         subject=req.subject,
