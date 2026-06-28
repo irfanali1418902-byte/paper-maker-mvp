@@ -1,12 +1,22 @@
-"""Tests for syllabus_service PDF import (AI call mocked)."""
+"""Tests for syllabus_service PDF/ZIP import (AI call mocked)."""
 
 import io
+import zipfile
 
 import pytest
 from pypdf import PdfWriter
 
 from app.repositories import syllabus_repository
 from app.services import syllabus_service
+from app.services.exceptions import AIGenerationFailed
+
+
+def _zip_bytes(entries: dict) -> bytes:
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        for name, data in entries.items():
+            zf.writestr(name, data)
+    return buf.getvalue()
 
 
 def _blank_pdf_bytes() -> bytes:
@@ -87,3 +97,79 @@ def test_import_from_pdf_skips_blank_subtopic_and_dupes(test_db, monkeypatch):
     assert result["inserted"] == 1
     assert result["skipped"] == 2
     assert result["total_found"] == 3
+
+
+def test_import_from_zip_handles_pdf_image_and_unsupported(test_db, monkeypatch):
+    monkeypatch.setattr(syllabus_service, "_extract_pdf_text", lambda data: "pdf text")
+    monkeypatch.setattr(
+        syllabus_service.ai_service,
+        "extract_topics_from_text",
+        lambda text, subject, grade: [
+            {"unit_no": 1, "unit_title": "U1", "subtopic_title": "From PDF", "page_no": 1}
+        ],
+    )
+    monkeypatch.setattr(
+        syllabus_service.ai_service,
+        "extract_topics_from_image",
+        lambda data, mime, subject, grade: [
+            {"unit_no": 2, "unit_title": "U2", "subtopic_title": "From Image", "page_no": 2}
+        ],
+    )
+
+    zip_bytes = _zip_bytes(
+        {
+            "math.pdf": b"fake-pdf",
+            "shapes.png": b"fake-png",
+            "notes.txt": b"ignore me",
+            "__MACOSX/junk": b"junk",
+        }
+    )
+    result = syllabus_service.import_from_zip(zip_bytes, "Mathematics", "Grade 1")
+
+    assert result["total_found"] == 2
+    assert result["inserted"] == 2
+    # Per-file breakdown: pdf ok, image ok, txt skipped (macosx ignored entirely).
+    by_name = {f["name"]: f for f in result["files"]}
+    assert by_name["math.pdf"]["status"] == "ok" and by_name["math.pdf"]["kind"] == "pdf"
+    assert by_name["shapes.png"]["status"] == "ok" and by_name["shapes.png"]["kind"] == "image"
+    assert by_name["notes.txt"]["status"] == "skipped"
+    assert "junk" not in by_name
+
+    titles = {r["subtopic_title"] for r in syllabus_repository.list_by_filters()}
+    assert titles == {"From PDF", "From Image"}
+
+
+def test_import_from_zip_records_per_file_error(test_db, monkeypatch):
+    monkeypatch.setattr(syllabus_service, "_extract_pdf_text", lambda data: "pdf text")
+    monkeypatch.setattr(
+        syllabus_service.ai_service,
+        "extract_topics_from_text",
+        lambda text, subject, grade: [
+            {"unit_no": 1, "unit_title": "U1", "subtopic_title": "Good", "page_no": 1}
+        ],
+    )
+
+    def _boom(data, mime, subject, grade):
+        raise AIGenerationFailed("Gemini abhi busy hai (HTTP 503).")
+
+    monkeypatch.setattr(syllabus_service.ai_service, "extract_topics_from_image", _boom)
+
+    zip_bytes = _zip_bytes({"ok.pdf": b"x", "bad.png": b"y"})
+    result = syllabus_service.import_from_zip(zip_bytes, "Mathematics", "Grade 1")
+
+    by_name = {f["name"]: f for f in result["files"]}
+    assert by_name["ok.pdf"]["status"] == "ok"
+    assert by_name["bad.png"]["status"] == "error"
+    assert "503" in by_name["bad.png"]["message"]
+    assert result["inserted"] == 1  # the good PDF still saved
+
+
+def test_import_from_zip_bad_zip_raises():
+    with pytest.raises(ValueError, match="ZIP file kharab"):
+        syllabus_service.import_from_zip(b"not a zip", "Math", "Grade 1")
+
+
+def test_import_from_zip_no_supported_files_raises():
+    zip_bytes = _zip_bytes({"readme.txt": b"hi", "data.csv": b"a,b"})
+    with pytest.raises(ValueError, match="koi PDF/JPG/PNG"):
+        syllabus_service.import_from_zip(zip_bytes, "Math", "Grade 1")

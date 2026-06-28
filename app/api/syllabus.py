@@ -4,7 +4,12 @@ from typing import List, Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
-from app.models.responses import SubjectGrade, SyllabusImportResponse, SyllabusTopic
+from app.models.responses import (
+    SubjectGrade,
+    SyllabusImportResponse,
+    SyllabusTopic,
+    SyllabusZipImportResponse,
+)
 from app.services import syllabus_service
 from app.services.exceptions import AIGenerationFailed
 
@@ -48,6 +53,36 @@ def upload_syllabus_pdf(
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Syllabus PDF save fail hui (DB error): {e}"
+        ) from e
+
+    return {"subject": subject.strip(), "grade": grade.strip(), **result}
+
+
+@router.post("/api/syllabus/upload-zip", response_model=SyllabusZipImportResponse)
+def upload_syllabus_zip(
+    subject: str = Form(...),
+    grade: str = Form(...),
+    file: UploadFile = File(...),
+):
+    """Teacher ek ZIP upload karta hai jisme multiple syllabus PDFs aur/ya
+    images (JPG/PNG) hoti hain; har file se AI topics nikaal kar save karti
+    hai. Har file ka natija alag-alag wapas aata hai (ek file fail ho to
+    baaki chalti rehti hain)."""
+    if not subject.strip() or not grade.strip():
+        raise HTTPException(status_code=400, detail="subject aur grade dono zaroori hain.")
+    if not (file.filename or "").lower().endswith(".zip"):
+        raise HTTPException(status_code=400, detail="Sirf .zip file upload karen.")
+
+    zip_bytes = file.file.read()
+
+    try:
+        result = syllabus_service.import_from_zip(zip_bytes, subject.strip(), grade.strip())
+    except ValueError as e:
+        # Bad/empty ZIP — well-formed request, unusable content.
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Syllabus ZIP save fail hui (DB error): {e}"
         ) from e
 
     return {"subject": subject.strip(), "grade": grade.strip(), **result}

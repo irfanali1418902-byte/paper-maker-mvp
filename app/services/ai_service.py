@@ -13,6 +13,7 @@ liya gaya hai (structured JSON output mangwana), bilingual instruction
 add ki gayi hai.
 """
 
+import base64
 import json
 import os
 
@@ -120,6 +121,39 @@ RESPONSE FORMAT (JSON ONLY):
 }}"""
 
 
+# Text aur image dono extraction same fields/format maangte hain — sirf source
+# (raw text vs page image) farq hai, isliye rules ek hi jagah.
+_SYLLABUS_EXTRACTION_RULES = """INSTRUCTIONS:
+1. Identify each unit/chapter and the sub-topics under it.
+2. For every sub-topic, output one object with these exact fields:
+   - "unit_no": integer unit/chapter number (best guess; if none, use 1).
+   - "unit_title": the unit/chapter title.
+   - "subtopic_title": the specific topic/lesson title.
+   - "activity_type": classify the cognitive demand as EXACTLY one of
+     "Introduction" (new concept, recall), "Identification" (recognise/name),
+     "Practice" (apply/solve), or "Review" (analyse/evaluate). Pick the best fit.
+   - "page_no": page number as an integer if visible, else null.
+   - "page_range": page range string like "12-18" if visible, else null.
+   - "learning_outcome": a short (max 15 words) outcome of what the student learns. If none stated, write a concise inferred one.
+3. Do NOT invent topics that aren't shown. Skip headers, prefaces, indexes, and answer keys.
+4. Respond with ONLY a valid JSON object. No markdown, no commentary.
+
+RESPONSE FORMAT (JSON ONLY):
+{
+  "topics": [
+    {
+      "unit_no": 1,
+      "unit_title": "...",
+      "subtopic_title": "...",
+      "activity_type": "Introduction",
+      "page_no": 5,
+      "page_range": "5-9",
+      "learning_outcome": "..."
+    }
+  ]
+}"""
+
+
 def build_syllabus_extraction_prompt(syllabus_text: str, subject: str, grade: str) -> str:
     return f"""You are a curriculum analyst. Below is the raw text extracted from a {subject} syllabus / textbook contents for {grade}. Extract a clean, structured list of teachable topics.
 
@@ -128,35 +162,13 @@ RAW SYLLABUS TEXT:
 {syllabus_text}
 \"\"\"
 
-INSTRUCTIONS:
-1. Identify each unit/chapter and the sub-topics under it.
-2. For every sub-topic, output one object with these exact fields:
-   - "unit_no": integer unit/chapter number (best guess from the text; if none, use 1).
-   - "unit_title": the unit/chapter title.
-   - "subtopic_title": the specific topic/lesson title.
-   - "activity_type": classify the cognitive demand as EXACTLY one of
-     "Introduction" (new concept, recall), "Identification" (recognise/name),
-     "Practice" (apply/solve), or "Review" (analyse/evaluate). Pick the best fit.
-   - "page_no": page number as an integer if the text shows one, else null.
-   - "page_range": page range string like "12-18" if visible, else null.
-   - "learning_outcome": a short (max 15 words) outcome of what the student learns. If none stated, write a concise inferred one.
-3. Do NOT invent topics that aren't in the text. Skip headers, prefaces, indexes, and answer keys.
-4. Respond with ONLY a valid JSON object. No markdown, no commentary.
+{_SYLLABUS_EXTRACTION_RULES}"""
 
-RESPONSE FORMAT (JSON ONLY):
-{{
-  "topics": [
-    {{
-      "unit_no": 1,
-      "unit_title": "...",
-      "subtopic_title": "...",
-      "activity_type": "Introduction",
-      "page_no": 5,
-      "page_range": "5-9",
-      "learning_outcome": "..."
-    }}
-  ]
-}}"""
+
+def build_syllabus_image_prompt(subject: str, grade: str) -> str:
+    return f"""You are a curriculum analyst. The attached image is a page from a {subject} syllabus / textbook contents for {grade}. Read it carefully (perform OCR if needed) and extract a clean, structured list of teachable topics.
+
+{_SYLLABUS_EXTRACTION_RULES}"""
 
 
 def _provider_error_message(provider: str, err: Exception) -> str:
@@ -203,15 +215,22 @@ def _extract_json(text: str, key: str = "questions") -> list:
     return parsed.get(key, [])
 
 
-def _call_gemini(prompt: str) -> str:
+def _call_gemini(prompt: str, image: tuple | None = None) -> str:
     # Key header mein bhejte hain (URL mein nahi) taake kisi error message ya
     # log mein leak na ho — pehle ?key= URL mein tha aur 503 par expose ho raha tha.
+    parts: list = [{"text": prompt}]
+    if image is not None:
+        mime_type, raw = image
+        parts = [
+            {"inline_data": {"mime_type": mime_type, "data": base64.b64encode(raw).decode()}},
+            {"text": prompt},
+        ]
     try:
         response = requests.post(
             GEMINI_API_URL,
             headers={"Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY},
             json={
-                "contents": [{"parts": [{"text": prompt}]}],
+                "contents": [{"parts": parts}],
                 "generationConfig": {"temperature": 0.7, "maxOutputTokens": 16000},
             },
             timeout=120,
@@ -239,7 +258,21 @@ def _call_gemini(prompt: str) -> str:
         raise ValueError(f"Gemini response samajh nahi aaya: {data}") from e
 
 
-def _call_claude(prompt: str) -> str:
+def _call_claude(prompt: str, image: tuple | None = None) -> str:
+    content: object = prompt
+    if image is not None:
+        mime_type, raw = image
+        content = [
+            {
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": mime_type,
+                    "data": base64.b64encode(raw).decode(),
+                },
+            },
+            {"type": "text", "text": prompt},
+        ]
     try:
         response = requests.post(
             ANTHROPIC_API_URL,
@@ -251,7 +284,7 @@ def _call_claude(prompt: str) -> str:
             json={
                 "model": ANTHROPIC_MODEL,
                 "max_tokens": 8000,
-                "messages": [{"role": "user", "content": prompt}],
+                "messages": [{"role": "user", "content": content}],
             },
             timeout=120,
         )
@@ -281,13 +314,14 @@ def _call_claude(prompt: str) -> str:
     )
 
 
-def _call_ai(prompt: str) -> str:
+def _call_ai(prompt: str, image: tuple | None = None) -> str:
     """Provider dispatch — Anthropic key set ho to Claude, warna Gemini.
-    Returns raw model text; JSON parsing caller karta hai (_extract_json)."""
+    Optional image (mime_type, raw_bytes) vision-capable models ko bheji jaati
+    hai. Returns raw model text; JSON parsing caller karta hai (_extract_json)."""
     if ANTHROPIC_API_KEY:
-        return _call_claude(prompt)
+        return _call_claude(prompt, image)
     if GEMINI_API_KEY:
-        return _call_gemini(prompt)
+        return _call_gemini(prompt, image)
     raise RuntimeError(
         "Koi API key set nahi hai. .env file mein GEMINI_API_KEY (free) ya "
         "ANTHROPIC_API_KEY (paid) dalen."
@@ -307,3 +341,11 @@ def extract_topics_from_text(syllabus_text: str, subject: str, grade: str) -> li
     of dicts return karta hai jise syllabus_service DB mein save karta hai."""
     prompt = build_syllabus_extraction_prompt(syllabus_text, subject, grade)
     return _extract_json(_call_ai(prompt), key="topics")
+
+
+def extract_topics_from_image(image_bytes: bytes, mime_type: str, subject: str, grade: str) -> list:
+    """Syllabus page ki image (JPG/PNG) se topics nikalta hai — vision-capable
+    model image ko OCR+samajh kar wahi structured shape return karta hai jo
+    text extraction deti hai."""
+    prompt = build_syllabus_image_prompt(subject, grade)
+    return _extract_json(_call_ai(prompt, image=(mime_type, image_bytes)), key="topics")

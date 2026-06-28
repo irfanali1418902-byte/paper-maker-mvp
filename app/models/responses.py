@@ -123,6 +123,28 @@ class SyllabusImportResponse(BaseModel):
     skipped: int
 
 
+class SyllabusZipFileResult(BaseModel):
+    """Per-file outcome inside a ZIP import."""
+
+    name: str
+    kind: str  # pdf | image | unsupported
+    topics_found: int
+    status: str  # ok | error | skipped
+    message: str = ""
+
+
+class SyllabusZipImportResponse(BaseModel):
+    """Result of a ZIP syllabus import — aggregate counts plus a per-file
+    breakdown so the teacher sees which files worked and which failed."""
+
+    subject: str
+    grade: Optional[str] = None
+    total_found: int
+    inserted: int
+    skipped: int
+    files: List[SyllabusZipFileResult]
+
+
 class GeneratePaperResponse(BaseModel):
     paper_id: str
     total_marks: int

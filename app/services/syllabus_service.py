@@ -1,14 +1,17 @@
-"""Syllabus topic listing + CSV/PDF import."""
+"""Syllabus topic listing + CSV/PDF/ZIP import."""
 
 import csv
 import io
+import os
 import sqlite3
 import uuid
+import zipfile
 
 from pypdf import PdfReader
 
 from app.repositories import syllabus_repository
 from app.services import ai_service
+from app.services.exceptions import AIGenerationFailed
 
 _ACTIVITY_TO_DIFFICULTY = {
     "Introduction": "easy",
@@ -20,6 +23,9 @@ _ACTIVITY_TO_DIFFICULTY = {
 # Pypdf se itne characters se kam nikle to maan lo PDF scanned/image-only hai
 # (text layer nahi) — AI ko bhejna bekaar hai, teacher ko saaf batao.
 _MIN_PDF_TEXT_CHARS = 40
+
+# ZIP ke andar in image extensions ko AI vision se padhte hain.
+_IMAGE_MIME = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png"}
 
 
 def list_grades() -> list:
@@ -72,13 +78,9 @@ def _coerce_int(value) -> int | None:
         return None
 
 
-def import_from_pdf(pdf_bytes: bytes, subject: str, grade: str) -> dict:
-    """Extracts the PDF's text, asks the AI to structure it into topics, and
-    saves each as a syllabus_topic. Duplicates (UNIQUE constraint) are skipped.
-    Returns counts so the route can report what happened."""
-    text = _extract_pdf_text(pdf_bytes)
-    topics = ai_service.extract_topics_from_text(text, subject, grade)
-
+def _save_topics(topics: list, subject: str, grade: str) -> dict:
+    """Inserts AI-extracted topics, skipping blanks and duplicates. Returns
+    {inserted, skipped}. Shared by PDF, image, and ZIP imports."""
     inserted = 0
     skipped = 0
     for topic in topics:
@@ -103,8 +105,96 @@ def import_from_pdf(pdf_bytes: bytes, subject: str, grade: str) -> dict:
         except sqlite3.IntegrityError:
             # UNIQUE-constraint duplicate — same topic already imported, skip.
             skipped += 1
+    return {"inserted": inserted, "skipped": skipped}
 
-    return {"inserted": inserted, "skipped": skipped, "total_found": len(topics)}
+
+def import_from_pdf(pdf_bytes: bytes, subject: str, grade: str) -> dict:
+    """Extracts the PDF's text, asks the AI to structure it into topics, and
+    saves each as a syllabus_topic. Duplicates (UNIQUE constraint) are skipped.
+    Returns counts so the route can report what happened."""
+    text = _extract_pdf_text(pdf_bytes)
+    topics = ai_service.extract_topics_from_text(text, subject, grade)
+    saved = _save_topics(topics, subject, grade)
+    return {"total_found": len(topics), **saved}
+
+
+def _extract_topics_from_entry(name: str, data: bytes, subject: str, grade: str) -> list:
+    """One ZIP entry -> topics. PDF se text-extraction, image se AI vision.
+    Unsupported extension par ValueError raise karta hai (caller per-file
+    handle karta hai)."""
+    ext = os.path.splitext(name)[1].lower()
+    if ext == ".pdf":
+        return ai_service.extract_topics_from_text(_extract_pdf_text(data), subject, grade)
+    if ext in _IMAGE_MIME:
+        return ai_service.extract_topics_from_image(data, _IMAGE_MIME[ext], subject, grade)
+    raise ValueError("PDF/JPG/PNG nahi — skip kiya.")
+
+
+def import_from_zip(zip_bytes: bytes, subject: str, grade: str) -> dict:
+    """Processes a ZIP of syllabus files: each PDF (text) and image (AI vision)
+    se topics nikaal kar save karta hai. Har file independently process hoti
+    hai — ek file fail ho to baaki chalti rehti hain, aur per-file natija
+    'files' list mein wapas aata hai."""
+    try:
+        archive = zipfile.ZipFile(io.BytesIO(zip_bytes))
+    except zipfile.BadZipFile as e:
+        raise ValueError(f"ZIP file kharab/invalid hai: {e}") from e
+
+    all_topics: list = []
+    files: list = []
+    saw_supported = False
+
+    for name in archive.namelist():
+        base = os.path.basename(name)
+        # Directories, macOS junk, aur hidden files skip.
+        if name.endswith("/") or "__MACOSX" in name or not base or base.startswith("."):
+            continue
+        ext = os.path.splitext(name)[1].lower()
+        kind = "pdf" if ext == ".pdf" else ("image" if ext in _IMAGE_MIME else "unsupported")
+
+        if kind == "unsupported":
+            files.append(
+                {
+                    "name": base,
+                    "kind": kind,
+                    "topics_found": 0,
+                    "status": "skipped",
+                    "message": "PDF/JPG/PNG nahi",
+                }
+            )
+            continue
+
+        saw_supported = True
+        try:
+            topics = _extract_topics_from_entry(name, archive.read(name), subject, grade)
+            all_topics.extend(topics)
+            files.append(
+                {
+                    "name": base,
+                    "kind": kind,
+                    "topics_found": len(topics),
+                    "status": "ok",
+                    "message": "",
+                }
+            )
+        except (ValueError, AIGenerationFailed) as e:
+            # Bad/scanned file ya AI failure — sirf is file ko error mark karo,
+            # baaki batch chalti rahe.
+            files.append(
+                {
+                    "name": base,
+                    "kind": kind,
+                    "topics_found": 0,
+                    "status": "error",
+                    "message": str(e),
+                }
+            )
+
+    if not saw_supported:
+        raise ValueError("ZIP mein koi PDF/JPG/PNG file nahi mili.")
+
+    saved = _save_topics(all_topics, subject, grade)
+    return {"total_found": len(all_topics), **saved, "files": files}
 
 
 def import_from_csv(csv_path: str, subject: str, grade: str) -> int:
