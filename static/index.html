@@ -85,6 +85,9 @@
   <button onclick="buildPaper()">2. Build paper from bank</button>
   <button id="printBtn" style="display:none;background:#a9722f" onclick="openPrintView()">3. Print / PDF dekhen</button>
   <button id="dashboardBtn" style="display:none;background:#2a5d8f" onclick="openDashboard()">4. Result dashboard dekhen</button>
+  <button id="csvDownloadBtn" style="display:none;background:#1a7a4a" onclick="downloadResultCSV()">📥 Result CSV download karen</button>
+  <button id="csvUploadBtn" style="display:none;background:#c47a00" onclick="document.getElementById('csvFileInput').click()">📤 Filled CSV upload karen</button>
+  <input type="file" id="csvFileInput" accept=".csv,.xlsx" style="display:none" onchange="uploadResultCSV(this)">
 
   <div style="border:1px solid #ddd;border-radius:8px;padding:14px;margin-top:16px;background:#f4f1fa">
     <div style="font-weight:600">🎯 Adaptive paper — class ki kamzoriyon se</div>
@@ -272,6 +275,8 @@ async function buildPaper() {
     currentPaperId = data.paper_id;
     document.getElementById('printBtn').style.display = 'inline-block';
     document.getElementById('dashboardBtn').style.display = 'inline-block';
+    document.getElementById('csvDownloadBtn').style.display = 'inline-block';
+    document.getElementById('csvUploadBtn').style.display = 'inline-block';
     setStatus(`Paper ban gaya — Total marks: ${data.total_marks}`);
     document.getElementById('adaptiveSummary').innerHTML = '';
     renderBalanceSummary(data.balance_summary);
@@ -301,6 +306,8 @@ async function buildAdaptivePaper() {
     currentPaperId = data.paper_id;
     document.getElementById('printBtn').style.display = 'inline-block';
     document.getElementById('dashboardBtn').style.display = 'inline-block';
+    document.getElementById('csvDownloadBtn').style.display = 'inline-block';
+    document.getElementById('csvUploadBtn').style.display = 'inline-block';
     setStatus(`Adaptive paper ban gaya — Total marks: ${data.total_marks}`);
     renderAdaptiveSummary(data.adaptive_summary);
     renderBalanceSummary(data.balance_summary);
@@ -381,6 +388,60 @@ function renderBalanceSummary(summary) {
       ${band('Medium', summary.medium, '#a9722f')}
       ${band('Hard', summary.hard, '#b3261e')}
     </div>`;
+}
+
+
+async function downloadResultCSV() {
+  if (!currentPaperId) { setStatus('Pehle paper banayein.'); return; }
+  const url = `/api/paper/${currentPaperId}/result-template`;
+  const res = await fetch(url);
+  if (!res.ok) { setStatus('CSV download fail hui.'); return; }
+  const blob = await res.blob();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `paper-${currentPaperId}-results.csv`;
+  a.click();
+  setStatus('CSV download ho gayi — marks fill kar ke wapas upload karein.');
+}
+
+async function uploadResultCSV(input) {
+  if (!currentPaperId) { setStatus('Pehle paper banayein.'); return; }
+  const file = input.files[0];
+  if (!file) return;
+  setStatus('Results upload ho rahe hain...');
+  const formData = new FormData();
+  formData.append('file', file);
+  try {
+    const res = await fetch(`/api/paper/${currentPaperId}/upload-results`, {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      let errMsg;
+      if (Array.isArray(data.detail)) {
+        errMsg = data.detail.map(e => {
+          // Server returns {row, issue} format
+          if (e.issue) return `Row ${e.row}: ${e.issue}`;
+          // Fallback for {row, errors:[]} format
+          const errs = Array.isArray(e.errors) ? e.errors.join(', ') : (e.errors || JSON.stringify(e));
+          return e.row ? `Row ${e.row}: ${errs}` : errs;
+        }).join(' | ');
+      } else if (typeof data.detail === 'string') {
+        errMsg = data.detail;
+      } else {
+        errMsg = JSON.stringify(data.detail);
+      }
+      setStatus('⚠️ Upload errors: ' + errMsg);
+      return;
+    }
+    setStatus(`✅ Results upload ho gaye! ${data.rows_saved ?? ''} rows saved. Dashboard khul raha hai...`);
+    // Auto-open dashboard
+    window.open(`/dashboard.html?paper_id=${currentPaperId}`, '_blank');
+  } catch (e) {
+    setStatus('Upload error: ' + e.message);
+  }
+  input.value = '';
 }
 
 function val(id) { return document.getElementById(id).value; }
