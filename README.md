@@ -107,6 +107,12 @@ check karti hai.)
 5. "Generate adaptive paper" — kisi paper ke uploaded results se class ki weak
    Bloom levels nikaal kar un par focus karta naya paper banata hai
 
+**Syllabus upload (optional, topics auto-fill):** "📄 Syllabus upload" panel se
+ek text-based PDF ya ek ZIP (multiple PDF + images JPG/PNG) upload karen — AI
+usme se units/topics nikaal kar save karta hai (images vision se padhi jaati
+hain). Phir wo topics "Class select" dropdown mein aa jaate hain, taake manually
+subject/topic type karne ke bajaye seedha select kar saken.
+
 Reproducible test data (D-index flags dekhne ke liye, ≥10 students chahiye):
 ```
 python seed_large_class.py <paper_id>
@@ -114,10 +120,11 @@ python seed_large_class.py <paper_id>
 
 ## Agla kaam (jo abhi nahi hai)
 
-- Syllabus PDF upload se topics auto-extract karna
 - Per-student adaptive papers (abhi whole-class weakness par based hai)
 - Topic-level weakness targeting (abhi Bloom-level par based hai)
 - Adaptive: weak level mein question bank khali ho to AI se auto-generate
+- Scanned/image-only PDF ke liye OCR (abhi sirf text-based PDF; images ZIP
+  ke through AI vision se padhi jaati hain)
 
 ## Note
 
