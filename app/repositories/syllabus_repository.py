@@ -52,27 +52,30 @@ def insert(
     page_no: Optional[int],
     learning_outcome: str,
 ) -> None:
-    """Used by the CSV importer. Raises on UNIQUE constraint violation;
-    caller decides what to do with duplicates."""
+    """Used by the CSV/PDF importers. Raises on UNIQUE constraint violation;
+    caller decides what to do with duplicates. The connection is closed even
+    on that raise — a leaked connection locks the DB file on Windows (§5)."""
     conn = get_connection()
-    cur = conn.cursor()
-    cur.execute(
-        """INSERT INTO syllabus_topics
-           (id, subject, grade, unit_no, unit_title, page_range,
-            subtopic_title, activity_type, page_no, learning_outcome)
-           VALUES (?,?,?,?,?,?,?,?,?,?)""",
-        (
-            topic_id,
-            subject,
-            grade,
-            unit_no,
-            unit_title,
-            page_range,
-            subtopic_title,
-            activity_type,
-            page_no,
-            learning_outcome,
-        ),
-    )
-    conn.commit()
-    conn.close()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """INSERT INTO syllabus_topics
+               (id, subject, grade, unit_no, unit_title, page_range,
+                subtopic_title, activity_type, page_no, learning_outcome)
+               VALUES (?,?,?,?,?,?,?,?,?,?)""",
+            (
+                topic_id,
+                subject,
+                grade,
+                unit_no,
+                unit_title,
+                page_range,
+                subtopic_title,
+                activity_type,
+                page_no,
+                learning_outcome,
+            ),
+        )
+        conn.commit()
+    finally:
+        conn.close()

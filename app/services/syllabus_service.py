@@ -1,10 +1,14 @@
-"""Syllabus topic listing + CSV import."""
+"""Syllabus topic listing + CSV/PDF import."""
 
 import csv
+import io
 import sqlite3
 import uuid
 
+from pypdf import PdfReader
+
 from app.repositories import syllabus_repository
+from app.services import ai_service
 
 _ACTIVITY_TO_DIFFICULTY = {
     "Introduction": "easy",
@@ -12,6 +16,10 @@ _ACTIVITY_TO_DIFFICULTY = {
     "Practice": "medium",
     "Review": "hard",
 }
+
+# Pypdf se itne characters se kam nikle to maan lo PDF scanned/image-only hai
+# (text layer nahi) — AI ko bhejna bekaar hai, teacher ko saaf batao.
+_MIN_PDF_TEXT_CHARS = 40
 
 
 def list_grades() -> list:
@@ -38,6 +46,65 @@ def get_topic(topic_id: str) -> dict | None:
             topic["activity_type"], "medium"
         )
     return topic
+
+
+def _extract_pdf_text(pdf_bytes: bytes) -> str:
+    """Pulls the text layer out of a PDF. Raises ValueError if the file is
+    not a readable PDF or has no extractable text (scanned/image-only)."""
+    try:
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+        text = "\n".join(page.extract_text() or "" for page in reader.pages)
+    except Exception as e:
+        raise ValueError(f"PDF parh nahi paye — file corrupt ya valid PDF nahi hai: {e}") from e
+
+    if len(text.strip()) < _MIN_PDF_TEXT_CHARS:
+        raise ValueError(
+            "Is PDF mein text nahi mila — lagta hai scanned/image-only PDF hai. "
+            "Abhi sirf text-wale (digital) PDF support hain. Text-based PDF try karen."
+        )
+    return text
+
+
+def _coerce_int(value) -> int | None:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def import_from_pdf(pdf_bytes: bytes, subject: str, grade: str) -> dict:
+    """Extracts the PDF's text, asks the AI to structure it into topics, and
+    saves each as a syllabus_topic. Duplicates (UNIQUE constraint) are skipped.
+    Returns counts so the route can report what happened."""
+    text = _extract_pdf_text(pdf_bytes)
+    topics = ai_service.extract_topics_from_text(text, subject, grade)
+
+    inserted = 0
+    skipped = 0
+    for topic in topics:
+        subtopic_title = (topic.get("subtopic_title") or "").strip()
+        if not subtopic_title:
+            skipped += 1
+            continue
+        try:
+            syllabus_repository.insert(
+                topic_id=str(uuid.uuid4()),
+                subject=subject,
+                grade=grade,
+                unit_no=_coerce_int(topic.get("unit_no")) or 1,
+                unit_title=(topic.get("unit_title") or "Untitled Unit").strip(),
+                page_range=topic.get("page_range"),
+                subtopic_title=subtopic_title,
+                activity_type=(topic.get("activity_type") or "Practice").strip(),
+                page_no=_coerce_int(topic.get("page_no")),
+                learning_outcome=(topic.get("learning_outcome") or "").strip(),
+            )
+            inserted += 1
+        except sqlite3.IntegrityError:
+            # UNIQUE-constraint duplicate — same topic already imported, skip.
+            skipped += 1
+
+    return {"inserted": inserted, "skipped": skipped, "total_found": len(topics)}
 
 
 def import_from_csv(csv_path: str, subject: str, grade: str) -> int:

@@ -112,6 +112,17 @@ class GenerateQuestionsResponse(BaseModel):
     question_ids: List[str]
 
 
+class SyllabusImportResponse(BaseModel):
+    """Result of a PDF/CSV syllabus import — how many topics the AI found,
+    how many were saved, and how many were skipped (duplicates/blank)."""
+
+    subject: str
+    grade: Optional[str] = None
+    total_found: int
+    inserted: int
+    skipped: int
+
+
 class GeneratePaperResponse(BaseModel):
     paper_id: str
     total_marks: int

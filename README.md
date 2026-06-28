@@ -68,6 +68,33 @@ Full rules `ARCHITECTURE.md` aur `CLAUDE.md` mein hain.
 
 5. Browser mein kholen: http://localhost:8000
 
+### PDF export ke liye LibreOffice (sirf Windows par, optional)
+
+Word (.docx) export bina kisi extra install ke chalta hai. **PDF** export ke
+liye LibreOffice chahiye — app andar .docx banakar use LibreOffice se PDF mein
+convert karti hai.
+
+1. [libreoffice.org/download](https://www.libreoffice.org/download/download-libreoffice/)
+   se Windows installer (64-bit) download karen.
+2. Installer chalayen, **default settings** ke saath install karen. Ye
+   khud-bakhud yahan install hota hai:
+   ```
+   C:\Program Files\LibreOffice\program\soffice.exe
+   ```
+3. Kuch karne ki zaroorat nahi — app is default path ko **khud dhoond leti
+   hai**. Server restart karen aur PDF export try karen.
+
+Agar tumne LibreOffice kisi **non-default jagah** install kiya hai, to `.env`
+mein uska poora path do:
+```
+SOFFICE_PATH=D:\Apps\LibreOffice\program\soffice.exe
+```
+(App pehle `SOFFICE_PATH`, phir system `PATH`, phir default install locations
+check karti hai.)
+
+> Verify: PowerShell mein `& "C:\Program Files\LibreOffice\program\soffice.exe" --version`
+> chala kar dekho — version number aaye to install theek hai.
+
 ## Kaise use karen
 
 1. Subject + Topic likhen (e.g. Mathematics / Fractions)

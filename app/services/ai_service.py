@@ -120,6 +120,45 @@ RESPONSE FORMAT (JSON ONLY):
 }}"""
 
 
+def build_syllabus_extraction_prompt(syllabus_text: str, subject: str, grade: str) -> str:
+    return f"""You are a curriculum analyst. Below is the raw text extracted from a {subject} syllabus / textbook contents for {grade}. Extract a clean, structured list of teachable topics.
+
+RAW SYLLABUS TEXT:
+\"\"\"
+{syllabus_text}
+\"\"\"
+
+INSTRUCTIONS:
+1. Identify each unit/chapter and the sub-topics under it.
+2. For every sub-topic, output one object with these exact fields:
+   - "unit_no": integer unit/chapter number (best guess from the text; if none, use 1).
+   - "unit_title": the unit/chapter title.
+   - "subtopic_title": the specific topic/lesson title.
+   - "activity_type": classify the cognitive demand as EXACTLY one of
+     "Introduction" (new concept, recall), "Identification" (recognise/name),
+     "Practice" (apply/solve), or "Review" (analyse/evaluate). Pick the best fit.
+   - "page_no": page number as an integer if the text shows one, else null.
+   - "page_range": page range string like "12-18" if visible, else null.
+   - "learning_outcome": a short (max 15 words) outcome of what the student learns. If none stated, write a concise inferred one.
+3. Do NOT invent topics that aren't in the text. Skip headers, prefaces, indexes, and answer keys.
+4. Respond with ONLY a valid JSON object. No markdown, no commentary.
+
+RESPONSE FORMAT (JSON ONLY):
+{{
+  "topics": [
+    {{
+      "unit_no": 1,
+      "unit_title": "...",
+      "subtopic_title": "...",
+      "activity_type": "Introduction",
+      "page_no": 5,
+      "page_range": "5-9",
+      "learning_outcome": "..."
+    }}
+  ]
+}}"""
+
+
 def _provider_error_message(provider: str, err: Exception) -> str:
     """Turn a requests-level failure into a short, key-free message safe to
     show a teacher. Never include the URL or response body — the Gemini URL
@@ -134,7 +173,7 @@ def _provider_error_message(provider: str, err: Exception) -> str:
     return f"{provider} se connect nahi ho saka (network/timeout). Dobara try karen."
 
 
-def _extract_json(text: str) -> list:
+def _extract_json(text: str, key: str = "questions") -> list:
     # Gemini/Claude kabhi-kabhi ```json ... ``` fences mein wrap kar dete hain
     cleaned = text.strip()
     if cleaned.startswith("```"):
@@ -148,8 +187,8 @@ def _extract_json(text: str) -> list:
         raise ValueError(
             "AI response mein valid JSON nahi mila — shayad response truncate ho gaya "
             "(token limit kam padh gayi) ya AI ne format follow nahi kiya. "
-            "Kam questions (e.g. 5-6) ke saath dobara try karen. Raw response (first 300 chars): "
-            + text[:300]
+            "Chhote input (kam items/pages) ke saath dobara try karen. "
+            "Raw response (first 300 chars): " + text[:300]
         )
 
     try:
@@ -157,14 +196,14 @@ def _extract_json(text: str) -> list:
     except json.JSONDecodeError as e:
         raise ValueError(
             "AI response truncate ho gaya lagta hai (JSON incomplete hai). "
-            "Kam questions (e.g. 5-6) ke saath dobara try karen, ya difficulty/distribution "
-            "simple rakhen. Raw response (first 300 chars): " + text[:300]
+            "Chhote input (kam items/pages) ke saath dobara try karen. "
+            "Raw response (first 300 chars): " + text[:300]
         ) from e
 
-    return parsed.get("questions", [])
+    return parsed.get(key, [])
 
 
-def _generate_with_gemini(prompt: str) -> list:
+def _call_gemini(prompt: str) -> str:
     # Key header mein bhejte hain (URL mein nahi) taake kisi error message ya
     # log mein leak na ho — pehle ?key= URL mein tha aur 503 par expose ho raha tha.
     try:
@@ -175,7 +214,7 @@ def _generate_with_gemini(prompt: str) -> list:
                 "contents": [{"parts": [{"text": prompt}]}],
                 "generationConfig": {"temperature": 0.7, "maxOutputTokens": 16000},
             },
-            timeout=60,
+            timeout=120,
         )
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
@@ -195,14 +234,12 @@ def _generate_with_gemini(prompt: str) -> list:
     )
 
     try:
-        text = data["candidates"][0]["content"]["parts"][0]["text"]
+        return data["candidates"][0]["content"]["parts"][0]["text"]
     except (KeyError, IndexError) as e:
         raise ValueError(f"Gemini response samajh nahi aaya: {data}") from e
 
-    return _extract_json(text)
 
-
-def _generate_with_claude(prompt: str) -> list:
+def _call_claude(prompt: str) -> str:
     try:
         response = requests.post(
             ANTHROPIC_API_URL,
@@ -216,7 +253,7 @@ def _generate_with_claude(prompt: str) -> list:
                 "max_tokens": 8000,
                 "messages": [{"role": "user", "content": prompt}],
             },
-            timeout=60,
+            timeout=120,
         )
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
@@ -239,24 +276,34 @@ def _generate_with_claude(prompt: str) -> list:
         total_tokens=total_t,
     )
 
-    text = "".join(
+    return "".join(
         block.get("text", "") for block in data.get("content", []) if block.get("type") == "text"
     )
-    return _extract_json(text)
+
+
+def _call_ai(prompt: str) -> str:
+    """Provider dispatch — Anthropic key set ho to Claude, warna Gemini.
+    Returns raw model text; JSON parsing caller karta hai (_extract_json)."""
+    if ANTHROPIC_API_KEY:
+        return _call_claude(prompt)
+    if GEMINI_API_KEY:
+        return _call_gemini(prompt)
+    raise RuntimeError(
+        "Koi API key set nahi hai. .env file mein GEMINI_API_KEY (free) ya "
+        "ANTHROPIC_API_KEY (paid) dalen."
+    )
 
 
 def generate_questions_from_ai(
     topic: str, subject: str, bloom_distribution: dict, question_types: list, difficulty: str
 ) -> list:
     prompt = build_prompt(topic, subject, bloom_distribution, question_types, difficulty)
+    return _extract_json(_call_ai(prompt), key="questions")
 
-    if ANTHROPIC_API_KEY:
-        return _generate_with_claude(prompt)
 
-    if GEMINI_API_KEY:
-        return _generate_with_gemini(prompt)
-
-    raise RuntimeError(
-        "Koi API key set nahi hai. .env file mein GEMINI_API_KEY (free) ya "
-        "ANTHROPIC_API_KEY (paid) dalen."
-    )
+def extract_topics_from_text(syllabus_text: str, subject: str, grade: str) -> list:
+    """Syllabus/textbook ke raw text se structured topics nikalta hai
+    (syllabus_topics row ki shape mein). AI provider use hota hai — JSON list
+    of dicts return karta hai jise syllabus_service DB mein save karta hai."""
+    prompt = build_syllabus_extraction_prompt(syllabus_text, subject, grade)
+    return _extract_json(_call_ai(prompt), key="topics")
