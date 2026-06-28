@@ -46,6 +46,25 @@
     </div>
   </details>
 
+  <details style="border:1px solid #ddd;border-radius:8px;padding:10px 14px;margin-top:10px;background:#f0f7ff">
+    <summary style="cursor:pointer;font-weight:600">📄 Syllabus PDF upload — topics auto-extract</summary>
+    <div style="margin-top:12px">
+      <p class="sub" style="margin-top:0">Syllabus/textbook ka PDF upload karen — AI usme se topics nikaal kar save karega. Phir wo neeche "Class select" dropdown mein aa jayenge. (Text-based PDF chahiye; scanned/image PDF abhi support nahi.)</p>
+
+      <label style="margin-top:0">Subject</label>
+      <input id="pdfSubject" placeholder="e.g. Mathematics" />
+
+      <label>Class/Grade</label>
+      <input id="pdfGrade" placeholder="e.g. Grade 4" />
+
+      <label>Syllabus PDF file</label>
+      <input type="file" id="pdfFile" accept=".pdf" />
+
+      <button id="pdfUploadBtn" onclick="uploadSyllabusPdf()">Upload &amp; extract topics</button>
+      <span id="pdfStatus" style="margin-left:10px;font-size:13px;color:#555"></span>
+    </div>
+  </details>
+
   <div style="border:1px solid #ddd;border-radius:8px;padding:14px;margin-top:10px;background:#f7faf9">
     <label style="margin-top:0">Class/Grade select karen</label>
     <select id="syllabusGrade" onchange="onGradeChange()">
@@ -230,6 +249,41 @@ function onSyllabusTopicChange() {
 }
 
 loadSyllabusGrades();
+
+async function uploadSyllabusPdf() {
+  const subject = val('pdfSubject').trim();
+  const grade = val('pdfGrade').trim();
+  const fileInput = document.getElementById('pdfFile');
+  const file = fileInput.files[0];
+  const statusEl = document.getElementById('pdfStatus');
+  const btn = document.getElementById('pdfUploadBtn');
+
+  if (!subject || !grade) { statusEl.textContent = '⚠️ Subject aur grade dono zaroori hain.'; return; }
+  if (!file) { statusEl.textContent = '⚠️ Pehle ek PDF select karen.'; return; }
+
+  btn.disabled = true;
+  statusEl.textContent = '⏳ PDF se topics extract ho rahe hain... (kuch seconds lagenge)';
+  const formData = new FormData();
+  formData.append('subject', subject);
+  formData.append('grade', grade);
+  formData.append('file', file);
+  try {
+    const res = await fetch('/api/syllabus/upload-pdf', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok) {
+      const detail = Array.isArray(data.detail) ? JSON.stringify(data.detail) : (data.detail || 'Error');
+      throw new Error(detail);
+    }
+    statusEl.textContent = `✅ ${data.inserted} topics save (${data.total_found} mile, ${data.skipped} skip).`;
+    fileInput.value = '';
+    // Naye subject+grade ko class dropdown mein le aao taake foran use ho sake.
+    await loadSyllabusGrades();
+  } catch (e) {
+    statusEl.textContent = '⚠️ ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
 
 async function generateQuestions() {
   setStatus("AI se questions generate ho rahe hain... (kuch seconds lagenge)");
