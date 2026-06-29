@@ -8,6 +8,7 @@ db_admin_service.py hata dein aur main.py se admin include nikaal dein.
        https://<app>.up.railway.app/api/admin/restore-db
 """
 
+import os
 import secrets
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
@@ -21,8 +22,14 @@ router = APIRouter()
 def restore_db(token: str = Form(...), file: UploadFile = File(...)):
     expected = db_admin_service.upload_token()
     if not expected:
+        # TEMP diagnostic: kaun se DB/TOKEN env-var NAAM (values nahi) app ko
+        # dikhte hain — taake pata chale variable running container mein hai ya
+        # nahi. Cleanup mein ye poora endpoint hat jata hai.
+        seen = sorted(k for k in os.environ if "DB" in k.upper() or "TOKEN" in k.upper())
         raise HTTPException(
-            status_code=403, detail="DB restore disabled — DB_UPLOAD_TOKEN env set nahi."
+            status_code=403,
+            detail=f"DB restore disabled — DB_UPLOAD_TOKEN env set nahi. "
+            f"App ko ye DB/TOKEN env names dikhte hain: {seen}",
         )
     # Constant-time compare — token guess ko timing se asaan na banaye.
     if not secrets.compare_digest(token, expected):
