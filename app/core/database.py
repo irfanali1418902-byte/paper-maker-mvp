@@ -4,11 +4,17 @@ ek file (paper_maker.db) hi poori database hai. Jab scale badhe to isi schema
 ko Supabase/PostgreSQL par seedha migrate kiya ja sakta hai.
 """
 
+import os
 import sqlite3
 from pathlib import Path
 
 # app/core/database.py se project root tak teen levels upar.
-DB_PATH = Path(__file__).parent.parent.parent / "paper_maker.db"
+_DEFAULT_DB_PATH = Path(__file__).parent.parent.parent / "paper_maker.db"
+# DB_PATH env override — production (Railway) par persistent volume path
+# (e.g. /data/paper_maker.db) point karne ke liye. Set na ho to project root
+# wali file (local dev). Ephemeral container FS par volume zaroori hai, warna
+# har redeploy par saara data ud jata hai.
+DB_PATH = Path(os.environ.get("DB_PATH") or _DEFAULT_DB_PATH)
 
 
 def get_connection() -> sqlite3.Connection:
@@ -18,6 +24,9 @@ def get_connection() -> sqlite3.Connection:
 
 
 def init_db() -> None:
+    # Custom DB_PATH (e.g. mounted volume) ka parent dir ensure karo taake
+    # pehli boot par sqlite connect fail na ho.
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = get_connection()
     cur = conn.cursor()
 

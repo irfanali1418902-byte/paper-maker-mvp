@@ -1,0 +1,17 @@
+# Railway deployment config — https://docs.railway.com/reference/config-as-code
+#
+# Nixpacks requirements.txt detect karke pip se deps install karta hai.
+# Start command production-grade hai: uvicorn ko 0.0.0.0 par bind karte hain
+# aur Railway ka injected $PORT use karte hain (local wala --reload/--port 8000
+# yahan use NAHI karte). Healthcheck "/" par hai — wahan static frontend serve
+# hota hai, to 200 milta hai jab app ready ho.
+
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/"
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
