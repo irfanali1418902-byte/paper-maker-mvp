@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api import admin, dashboard, export, papers, questions, school_settings, syllabus
+from app.api import dashboard, export, papers, questions, school_settings, syllabus
 from app.core.database import init_db
 
 app = FastAPI(title="AII Smart Paper Maker - Phase 1")
@@ -30,7 +30,6 @@ app.include_router(dashboard.router)
 app.include_router(export.router)
 app.include_router(syllabus.router)
 app.include_router(school_settings.router)
-app.include_router(admin.router)  # TEMPORARY — DB restore; use ke baad hata dein
 
 # Static frontend ka absolute path lete hain taake uvicorn kahin se bhi
 # launch ho, file resolve ho jaye.
