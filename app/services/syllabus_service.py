@@ -7,6 +7,7 @@ import sqlite3
 import uuid
 import zipfile
 
+import fitz
 from pypdf import PdfReader
 
 from app.repositories import syllabus_repository
@@ -21,8 +22,18 @@ _ACTIVITY_TO_DIFFICULTY = {
 }
 
 # Pypdf se itne characters se kam nikle to maan lo PDF scanned/image-only hai
-# (text layer nahi) — AI ko bhejna bekaar hai, teacher ko saaf batao.
+# (text layer nahi) — phir page-images render karke AI vision (OCR) se padhte hain.
 _MIN_PDF_TEXT_CHARS = 40
+
+# Scanned PDF vision fallback: itne pages tak hi render+OCR karte hain. Syllabus
+# ka contents/index aam taur par pehle chand pages par hota hai; poori scanned
+# kitaab ko page-by-page vision bhejna mehnga aur Gemini quota ke liye khatarnak
+# hai. Is se zyada pages ho to baaki skip ho jaate hain (warning print hoti hai).
+_MAX_VISION_PAGES = 15
+
+# Scanned page ko itne DPI par render karte hain — OCR ke liye sharp, par
+# payload itna bhaari nahi ke vision call slow/expensive ho jaye.
+_RENDER_DPI = 200
 
 # ZIP ke andar in image extensions ko AI vision se padhte hain.
 _IMAGE_MIME = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png"}
@@ -54,9 +65,10 @@ def get_topic(topic_id: str) -> dict | None:
     return topic
 
 
-def _extract_pdf_text(pdf_bytes: bytes) -> str:
-    """Pulls the text layer out of a PDF. Raises ValueError if the file is
-    not a readable PDF or has no extractable text (scanned/image-only)."""
+def _try_extract_pdf_text(pdf_bytes: bytes) -> str | None:
+    """Pulls the text layer out of a PDF. Returns the text, ya None agar PDF
+    mein usable text layer na ho (scanned/image-only — caller vision fallback
+    use karta hai). ValueError sirf tab jab file readable PDF hi na ho."""
     try:
         reader = PdfReader(io.BytesIO(pdf_bytes))
         text = "\n".join(page.extract_text() or "" for page in reader.pages)
@@ -64,11 +76,51 @@ def _extract_pdf_text(pdf_bytes: bytes) -> str:
         raise ValueError(f"PDF parh nahi paye — file corrupt ya valid PDF nahi hai: {e}") from e
 
     if len(text.strip()) < _MIN_PDF_TEXT_CHARS:
-        raise ValueError(
-            "Is PDF mein text nahi mila — lagta hai scanned/image-only PDF hai. "
-            "Abhi sirf text-wale (digital) PDF support hain. Text-based PDF try karen."
-        )
+        return None
     return text
+
+
+def _render_pdf_to_images(pdf_bytes: bytes) -> list[tuple[str, bytes]]:
+    """Har PDF page ko PNG image (mime_type, bytes) mein render karta hai, AI
+    vision (OCR) ke liye. Scanned/image-only PDFs ke liye fallback. _MAX_VISION_
+    PAGES se zyada pages ho to baaki skip (warning print). ValueError agar PDF
+    open hi na ho."""
+    try:
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    except Exception as e:
+        raise ValueError(f"PDF parh nahi paye — file corrupt ya valid PDF nahi hai: {e}") from e
+
+    matrix = fitz.Matrix(_RENDER_DPI / 72, _RENDER_DPI / 72)
+    page_count = min(doc.page_count, _MAX_VISION_PAGES)
+    if doc.page_count > _MAX_VISION_PAGES:
+        print(
+            f"Scanned PDF mein {doc.page_count} pages — sirf pehle "
+            f"{_MAX_VISION_PAGES} vision se padhe gaye, baaki skip."
+        )
+
+    images: list[tuple[str, bytes]] = []
+    try:
+        for i in range(page_count):
+            pix = doc[i].get_pixmap(matrix=matrix)
+            images.append(("image/png", pix.tobytes("png")))
+    finally:
+        doc.close()
+    return images
+
+
+def _extract_topics_from_pdf(pdf_bytes: bytes, subject: str, grade: str) -> list:
+    """PDF se topics nikalta hai. Pehle text layer try karta hai; text na mile
+    (scanned/image-only PDF) to har page ko image mein render karke AI vision
+    (OCR) se topics nikalta hai aur sab pages ke topics merge kar deta hai.
+    Single-PDF aur ZIP-PDF dono yahi raasta use karte hain."""
+    text = _try_extract_pdf_text(pdf_bytes)
+    if text is not None:
+        return ai_service.extract_topics_from_text(text, subject, grade)
+
+    topics: list = []
+    for mime_type, page_png in _render_pdf_to_images(pdf_bytes):
+        topics.extend(ai_service.extract_topics_from_image(page_png, mime_type, subject, grade))
+    return topics
 
 
 def _coerce_int(value) -> int | None:
@@ -111,9 +163,9 @@ def _save_topics(topics: list, subject: str, grade: str) -> dict:
 def import_from_pdf(pdf_bytes: bytes, subject: str, grade: str) -> dict:
     """Extracts the PDF's text, asks the AI to structure it into topics, and
     saves each as a syllabus_topic. Duplicates (UNIQUE constraint) are skipped.
-    Returns counts so the route can report what happened."""
-    text = _extract_pdf_text(pdf_bytes)
-    topics = ai_service.extract_topics_from_text(text, subject, grade)
+    Scanned/image-only PDF ho to khud-ba-khud AI vision (OCR) fallback chalta
+    hai. Returns counts so the route can report what happened."""
+    topics = _extract_topics_from_pdf(pdf_bytes, subject, grade)
     saved = _save_topics(topics, subject, grade)
     return {"total_found": len(topics), **saved}
 
@@ -124,7 +176,7 @@ def _extract_topics_from_entry(name: str, data: bytes, subject: str, grade: str)
     handle karta hai)."""
     ext = os.path.splitext(name)[1].lower()
     if ext == ".pdf":
-        return ai_service.extract_topics_from_text(_extract_pdf_text(data), subject, grade)
+        return _extract_topics_from_pdf(data, subject, grade)
     if ext in _IMAGE_MIME:
         return ai_service.extract_topics_from_image(data, _IMAGE_MIME[ext], subject, grade)
     raise ValueError("PDF/JPG/PNG nahi — skip kiya.")

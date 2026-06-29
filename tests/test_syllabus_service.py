@@ -34,19 +34,54 @@ def test_coerce_int_handles_junk():
     assert syllabus_service._coerce_int("abc") is None
 
 
-def test_extract_pdf_text_rejects_non_pdf():
+def test_try_extract_pdf_text_rejects_non_pdf():
     with pytest.raises(ValueError, match="valid PDF nahi"):
-        syllabus_service._extract_pdf_text(b"this is not a pdf")
+        syllabus_service._try_extract_pdf_text(b"this is not a pdf")
 
 
-def test_extract_pdf_text_rejects_image_only_pdf():
-    # Blank page has no text layer — should read as scanned/image-only.
-    with pytest.raises(ValueError, match="scanned"):
-        syllabus_service._extract_pdf_text(_blank_pdf_bytes())
+def test_try_extract_pdf_text_returns_none_for_image_only_pdf():
+    # Blank page has no text layer — reads as scanned/image-only, so the text
+    # extractor returns None and the caller falls back to AI vision.
+    assert syllabus_service._try_extract_pdf_text(_blank_pdf_bytes()) is None
+
+
+def test_render_pdf_to_images_renders_pages():
+    # A real (blank) PDF should render to one PNG per page for the vision path.
+    images = syllabus_service._render_pdf_to_images(_blank_pdf_bytes())
+    assert len(images) == 1
+    mime, data = images[0]
+    assert mime == "image/png"
+    assert data[:8] == b"\x89PNG\r\n\x1a\n"  # PNG magic bytes
+
+
+def test_import_from_pdf_falls_back_to_vision_for_scanned(test_db, monkeypatch):
+    # No text layer -> _try_extract_pdf_text returns None -> vision path runs
+    # on each rendered page and its topics get saved.
+    monkeypatch.setattr(syllabus_service, "_try_extract_pdf_text", lambda b: None)
+    monkeypatch.setattr(
+        syllabus_service,
+        "_render_pdf_to_images",
+        lambda b: [("image/png", b"page1"), ("image/png", b"page2")],
+    )
+    monkeypatch.setattr(
+        syllabus_service.ai_service,
+        "extract_topics_from_image",
+        lambda data, mime, subject, grade: [
+            {"unit_no": 1, "unit_title": "Scanned", "subtopic_title": f"Topic {data!r}"}
+        ],
+    )
+
+    result = syllabus_service.import_from_pdf(b"%PDF-scanned", "Mathematics", "Grade 1")
+
+    # One topic per rendered page, both saved.
+    assert result["total_found"] == 2
+    assert result["inserted"] == 2
+    titles = {r["subtopic_title"] for r in syllabus_repository.list_by_filters()}
+    assert titles == {"Topic b'page1'", "Topic b'page2'"}
 
 
 def test_import_from_pdf_inserts_topics(test_db, monkeypatch):
-    monkeypatch.setattr(syllabus_service, "_extract_pdf_text", lambda b: "dummy text")
+    monkeypatch.setattr(syllabus_service, "_try_extract_pdf_text", lambda b: "dummy text")
     monkeypatch.setattr(
         syllabus_service.ai_service,
         "extract_topics_from_text",
@@ -81,7 +116,7 @@ def test_import_from_pdf_inserts_topics(test_db, monkeypatch):
 
 
 def test_import_from_pdf_skips_blank_subtopic_and_dupes(test_db, monkeypatch):
-    monkeypatch.setattr(syllabus_service, "_extract_pdf_text", lambda b: "dummy text")
+    monkeypatch.setattr(syllabus_service, "_try_extract_pdf_text", lambda b: "dummy text")
     monkeypatch.setattr(
         syllabus_service.ai_service,
         "extract_topics_from_text",
@@ -100,7 +135,7 @@ def test_import_from_pdf_skips_blank_subtopic_and_dupes(test_db, monkeypatch):
 
 
 def test_import_from_zip_handles_pdf_image_and_unsupported(test_db, monkeypatch):
-    monkeypatch.setattr(syllabus_service, "_extract_pdf_text", lambda data: "pdf text")
+    monkeypatch.setattr(syllabus_service, "_try_extract_pdf_text", lambda data: "pdf text")
     monkeypatch.setattr(
         syllabus_service.ai_service,
         "extract_topics_from_text",
@@ -140,7 +175,7 @@ def test_import_from_zip_handles_pdf_image_and_unsupported(test_db, monkeypatch)
 
 
 def test_import_from_zip_records_per_file_error(test_db, monkeypatch):
-    monkeypatch.setattr(syllabus_service, "_extract_pdf_text", lambda data: "pdf text")
+    monkeypatch.setattr(syllabus_service, "_try_extract_pdf_text", lambda data: "pdf text")
     monkeypatch.setattr(
         syllabus_service.ai_service,
         "extract_topics_from_text",
