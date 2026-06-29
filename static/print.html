@@ -2,17 +2,74 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Exam Paper — Print</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;600&display=swap" rel="stylesheet">
 <style>
   @page { size: A4; margin: 14mm; }
   * { box-sizing: border-box; }
-  body { font-family: system-ui, sans-serif; color: #1a1a1a; margin: 0; background: #f2f2f2; }
 
-  .toolbar { position: sticky; top: 0; background: #1d6e56; padding: 10px 20px; display: flex; gap: 10px; align-items: center; z-index: 10; }
-  .toolbar button { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; background: #fff; color: #1d6e56; font-weight: 600; }
-  .toolbar span { color: #fff; font-size: 13px; }
+  :root {
+    --primary: #2E5AAC;
+    --primary-hover: #244a90;
+    --navy: #16294A;
+    --tint: #EAF1FB;
+    --ink: #16213A;
+    --muted: #5B6678;
+    --border: #E3E8F1;
+    --bg: #F5F7FB;
+    --radius-btn: 8px;
+  }
 
-  .sheet { max-width: 210mm; margin: 20px auto; background: #fff; padding: 14mm; box-shadow: 0 2px 10px rgba(0,0,0,.15); }
+  body {
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    color: #1a1a1a;
+    margin: 0;
+    background: var(--bg);
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ---- Sidebar (Direction A — screen only, hidden in print) ---- */
+  .app-sidebar {
+    width: 248px;
+    flex-shrink: 0;
+    background: var(--navy);
+    color: #fff;
+    padding: 24px 18px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .brand { font-weight: 700; font-size: 18px; line-height: 1.3; }
+  .brand small { display: block; font-weight: 400; font-size: 12px; color: #A9B6CE; margin-top: 4px; }
+  .app-nav { margin-top: 24px; display: flex; flex-direction: column; gap: 2px; }
+  .app-nav a {
+    color: #C7D2E6; text-decoration: none; font-size: 14px;
+    padding: 9px 12px; border-radius: 8px; font-weight: 500;
+  }
+  .app-nav a:hover { background: rgba(255,255,255,.08); color: #fff; }
+  .side-actions { margin-top: 24px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+  .side-actions button {
+    padding: 10px 16px; border: none; border-radius: var(--radius-btn);
+    cursor: pointer; font-size: 14px; font-weight: 600; font-family: inherit;
+    background: #fff; color: var(--navy);
+  }
+  .side-actions button:hover { background: var(--tint); }
+  .side-actions span { color: #C7D2E6; font-size: 13px; }
+  .sidebar-foot { margin-top: auto; font-size: 12px; color: #8092B0; line-height: 1.6; }
+
+  /* ---- Main + printable sheet ---- */
+  .print-main { flex: 1; min-width: 0; padding: 24px; }
+
+  .sheet {
+    max-width: 210mm; margin: 0 auto; background: #fff; padding: 14mm;
+    box-shadow: 0 8px 24px rgba(0,0,0,.12); border-radius: 6px;
+  }
 
   .letterhead { display: flex; align-items: center; gap: 16px; border-bottom: 3px solid var(--accent, #0e4d3c); padding-bottom: 12px; margin-bottom: 14px; }
   .letterhead img.logo { width: 64px; height: 64px; object-fit: contain; border-radius: 8px; flex-shrink: 0; }
@@ -47,55 +104,72 @@
 
   .footer-note { text-align: center; font-size: 11px; color: #888; margin-top: 24px; border-top: 1px solid #ddd; padding-top: 8px; }
 
-  #status { text-align: center; padding: 40px; color: #666; }
+  #status { text-align: center; padding: 40px; color: var(--muted); }
 
   @media print {
-    body { background: #fff; }
-    .toolbar { display: none; }
-    .sheet { box-shadow: none; margin: 0; max-width: none; }
+    body { background: #fff; display: block; }
+    .app-sidebar { display: none !important; }
+    .print-main { padding: 0; }
+    .sheet { box-shadow: none; margin: 0; max-width: none; border-radius: 0; }
+  }
+
+  @media (max-width: 760px) {
+    body { flex-direction: column; }
+    .app-sidebar { width: 100%; height: auto; position: static; }
+    .sidebar-foot { display: none; }
+    .print-main { padding: 16px; }
   }
 </style>
 </head>
 <body>
 
-<div class="toolbar">
-  <button onclick="window.print()">🖨️ Print / Save as PDF</button>
-  <span id="toolbarInfo"></span>
-</div>
+<aside class="app-sidebar">
+  <div class="brand">AII Smart Paper Maker<small>Exam paper · print view</small></div>
+  <nav class="app-nav">
+    <a href="/">← Generator</a>
+  </nav>
+  <div class="side-actions">
+    <button onclick="window.print()">🖨️ Print / Save as PDF</button>
+    <span id="toolbarInfo"></span>
+  </div>
+  <div class="sidebar-foot">Sidebar sirf screen par hai —<br/>print/PDF mein sirf paper aata hai.</div>
+</aside>
 
-<div id="status">Paper load ho raha hai...</div>
-<div class="sheet" id="sheet" style="display:none">
+<main class="print-main">
+  <div id="status">Paper load ho raha hai...</div>
+  <div class="sheet" id="sheet" style="display:none">
 
-  <div class="letterhead">
-    <img class="logo" id="logoImg" style="display:none" />
-    <div class="names">
-      <div class="school-en" id="schoolNameEn"></div>
-      <div class="school-ur" id="schoolNameUr"></div>
-      <div class="address" id="schoolAddress"></div>
+    <div class="letterhead">
+      <img class="logo" id="logoImg" style="display:none" />
+      <div class="names">
+        <div class="school-en" id="schoolNameEn"></div>
+        <div class="school-ur" id="schoolNameUr"></div>
+        <div class="address" id="schoolAddress"></div>
+      </div>
     </div>
+
+    <div class="paper-title">
+      <h2 id="paperTitle"></h2>
+    </div>
+
+    <div class="meta-row">
+      <div>Name / نام: <span class="fill-line">&nbsp;</span></div>
+      <div>Class / جماعت: <span class="fill-line" id="metaClass"></span></div>
+      <div>Date / تاریخ: <span class="fill-line">&nbsp;</span></div>
+    </div>
+    <div class="meta-row">
+      <div>Roll No / رول نمبر: <span class="fill-line">&nbsp;</span></div>
+      <div>Total Marks / کل نمبر: <span class="fill-line" id="metaMarks"></span></div>
+      <div>Time / وقت: <span class="fill-line">&nbsp;</span></div>
+    </div>
+
+    <div class="instructions">Attempt all questions. / تمام سوالات کے جواب دیں۔</div>
+
+    <div id="questionsContainer"></div>
+
+    <div class="footer-note">Generated with AII Smart Paper Maker</div>
   </div>
-
-  <div class="paper-title">
-    <h2 id="paperTitle"></h2>
-  </div>
-
-  <div class="meta-row">
-    <div>Name / نام: <span class="fill-line">&nbsp;</span></div>
-    <div>Class / جماعت: <span class="fill-line" id="metaClass"></span></div>
-    <div>Date / تاریخ: <span class="fill-line">&nbsp;</span></div>
-  </div>
-  <div class="meta-row">
-    <div>Roll No / رول نمبر: <span class="fill-line">&nbsp;</span></div>
-    <div>Total Marks / کل نمبر: <span class="fill-line" id="metaMarks"></span></div>
-    <div>Time / وقت: <span class="fill-line">&nbsp;</span></div>
-  </div>
-
-  <div class="instructions">Attempt all questions. / تمام سوالات کے جواب دیں۔</div>
-
-  <div id="questionsContainer"></div>
-
-  <div class="footer-note">Generated with AII Smart Paper Maker</div>
-</div>
+</main>
 
 <script>
 function getParam(name) {

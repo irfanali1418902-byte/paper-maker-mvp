@@ -4,95 +4,210 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>AII Smart Paper Maker — Result Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;600&display=swap" rel="stylesheet">
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 980px; margin: 40px auto; padding: 0 20px; color: #222; }
-  a { color: #1d6e56; }
-  h1 { font-size: 22px; margin-bottom: 4px; }
-  h2 { font-size: 17px; margin-top: 34px; border-bottom: 2px solid #eee; padding-bottom: 6px; }
-  p.sub { color: #666; font-size: 14px; margin-top: 0; }
-  label { display: block; margin-top: 14px; font-weight: 600; font-size: 14px; }
-  input, select { width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
-  button { margin-top: 14px; padding: 10px 18px; background: #1d6e56; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
-  button:hover { background: #155340; }
+  :root {
+    --primary: #2E5AAC;
+    --primary-hover: #244a90;
+    --navy: #16294A;
+    --tint: #EAF1FB;
+    --tint2: #EEF3FC;
+    --ink: #16213A;
+    --ink2: #1B2433;
+    --muted: #5B6678;
+    --muted2: #8A93A4;
+    --border: #E3E8F1;
+    --line: #EDF0F5;
+    --surface: #FFFFFF;
+    --bg: #F5F7FB;
+    --ok-bg: #E6F4EC;   --ok-tx: #2E7D5B;
+    --warn-bg: #FBF1DF; --warn-tx: #B5760E;
+    --err-bg: #FBE9E7;  --err-tx: #C0392B;
+    --radius-card: 10px;
+    --radius-btn: 8px;
+    --shadow: 0 2px 10px rgba(22,33,58,.04);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    color: var(--ink);
+    margin: 0;
+    background: var(--bg);
+    display: flex;
+    min-height: 100vh;
+  }
+  a { color: var(--primary); }
+
+  /* ---- Sidebar (Direction A — Institutional, deep navy) ---- */
+  .app-sidebar {
+    width: 248px;
+    flex-shrink: 0;
+    background: var(--navy);
+    color: #fff;
+    padding: 24px 18px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .brand { font-weight: 700; font-size: 18px; line-height: 1.3; }
+  .brand small { display: block; font-weight: 400; font-size: 12px; color: #A9B6CE; margin-top: 4px; }
+  .app-nav { margin-top: 26px; display: flex; flex-direction: column; gap: 2px; }
+  .app-nav a {
+    color: #C7D2E6; text-decoration: none; font-size: 14px;
+    padding: 9px 12px; border-radius: 8px; font-weight: 500;
+  }
+  .app-nav a:hover { background: rgba(255,255,255,.08); color: #fff; }
+  .sidebar-foot { margin-top: auto; font-size: 12px; color: #8092B0; line-height: 1.6; }
+
+  /* ---- Main content ---- */
+  .app-main { flex: 1; min-width: 0; padding: 28px 30px; max-width: 1080px; }
+  .page-head h1 { font-size: 22px; margin: 0 0 4px; font-weight: 700; }
+  p.sub { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .panel h2 { font-size: 16px; margin: 0 0 4px; font-weight: 700; color: var(--ink); }
+
+  label { display: block; margin-top: 14px; font-weight: 600; font-size: 13px; color: var(--ink2); }
+  input, select {
+    width: 100%; padding: 9px 10px; margin-top: 5px;
+    border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; font-family: inherit; background: #fff; color: var(--ink);
+  }
+  input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--tint); }
+
+  button {
+    margin-top: 14px; padding: 10px 16px; background: var(--primary); color: #fff;
+    border: none; border-radius: var(--radius-btn); cursor: pointer;
+    font-size: 14px; font-weight: 600; font-family: inherit;
+  }
+  button:hover { background: var(--primary-hover); }
   .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
   .row > div { flex: 1; min-width: 220px; }
 
-  #status { margin-top: 14px; font-size: 14px; min-height: 20px; }
-  #status.error { color: #b3261e; }
-  #status.ok { color: #1d6e56; }
+  #status { margin-top: 14px; font-size: 14px; min-height: 20px; color: var(--muted); }
+  #status.error { color: var(--err-tx); }
+  #status.ok { color: var(--ok-tx); }
 
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 14px; }
-  .card { border: 1px solid #ddd; border-radius: 8px; padding: 14px; background: #f7faf9; }
-  .card .value { font-size: 24px; font-weight: 700; color: #1d6e56; }
-  .card .caption { font-size: 12px; color: #777; margin-top: 4px; }
+  .card { border: 1px solid var(--border); border-radius: 10px; padding: 14px; background: #FBFCFE; }
+  .card .value { font-size: 24px; font-weight: 700; color: var(--primary); }
+  .card .caption { font-size: 12px; color: var(--muted); margin-top: 4px; }
 
   table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
-  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #eee; }
-  th { background: #f2f5f4; font-size: 13px; }
-  tr:hover td { background: #fafcfb; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  th { background: var(--tint2); font-size: 13px; color: var(--ink2); }
+  tr:hover td { background: #FAFBFE; }
   td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 
   .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-  .badge.pass { background: #e3f3ec; color: #1d6e56; }
-  .badge.fail { background: #fbe4e2; color: #b3261e; }
+  .badge.pass { background: var(--ok-bg); color: var(--ok-tx); }
+  .badge.fail { background: var(--err-bg); color: var(--err-tx); }
   .medal { font-size: 15px; }
 
   /* Horizontal bar used for question + bloom averages */
-  .bar-wrap { background: #eee; border-radius: 5px; height: 16px; width: 140px; overflow: hidden; display: inline-block; vertical-align: middle; }
+  .bar-wrap { background: var(--line); border-radius: 5px; height: 16px; width: 140px; overflow: hidden; display: inline-block; vertical-align: middle; }
   .bar { height: 100%; border-radius: 5px; }
-  .bar.good { background: #2e9e6e; }
-  .bar.mid { background: #e0a33a; }
-  .bar.weak { background: #d4584c; }
+  .bar.good { background: #2E7D5B; }
+  .bar.mid { background: #B5760E; }
+  .bar.weak { background: #C0392B; }
 
   /* P-value / D-index cells, coloured by quality band */
   .pd { font-weight: 600; font-variant-numeric: tabular-nums; }
-  .pd.good { color: #1d6e56; }
-  .pd.mid { color: #a9722f; }
-  .pd.weak { color: #b3261e; }
-  .pd.unreliable { color: #aaa; font-weight: 400; }
-  tr.flagged td { background: #fff7f6; }
-  .flag-reason { font-size: 12px; color: #b3261e; }
+  .pd.good { color: #2E7D5B; }
+  .pd.mid { color: #B5760E; }
+  .pd.weak { color: #C0392B; }
+  .pd.unreliable { color: var(--muted2); font-weight: 400; }
+  tr.flagged td { background: var(--warn-bg); }
+  .flag-reason { font-size: 12px; color: var(--err-tx); }
 
   .hidden { display: none; }
-  .empty { color: #888; font-size: 14px; margin-top: 12px; }
+  .empty { color: var(--muted); font-size: 14px; margin-top: 12px; }
+  .urdu { direction: rtl; font-family: 'Noto Nastaliq Urdu', serif; }
+
+  @media (max-width: 760px) {
+    body { flex-direction: column; }
+    .app-sidebar { width: 100%; height: auto; position: static; flex-direction: row; align-items: center; gap: 16px; padding: 16px; }
+    .app-nav { margin-top: 0; flex-direction: row; flex-wrap: wrap; gap: 4px; }
+    .sidebar-foot { display: none; }
+    .app-main { padding: 20px 16px; }
+  }
 </style>
 </head>
 <body>
-  <h1>📊 Result Analyzer Dashboard</h1>
-  <p class="sub">Student results, class ranking aur Bloom-level breakdown — ek paper ke uploaded results se. <a href="/">← Paper maker pe wapas</a></p>
+  <aside class="app-sidebar">
+    <div class="brand">AII Smart Paper Maker<small>Result dashboard</small></div>
+    <nav class="app-nav">
+      <a href="#summary">📊 Class summary</a>
+      <a href="#students">🏅 Students &amp; ranking</a>
+      <a href="#questions">❓ Per-question</a>
+      <a href="#bloom">🧠 Bloom breakdown</a>
+      <a href="/">← Generator</a>
+    </nav>
+    <div class="sidebar-foot">Ek paper ke uploaded<br/>results ka analysis.</div>
+  </aside>
 
-  <div class="row">
-    <div>
-      <label for="paperId">Paper ID</label>
-      <input id="paperId" placeholder="paper assemble karne ke baad jo ID milti hai" />
+  <main class="app-main">
+    <div class="page-head">
+      <h1>📊 Result Analyzer Dashboard</h1>
+      <p class="sub">Student results, class ranking aur Bloom-level breakdown — ek paper ke uploaded results se. <a href="/">← Paper maker pe wapas</a></p>
     </div>
-    <div style="flex:0 0 auto">
-      <button onclick="loadLatest()">Dashboard dekhen</button>
+
+    <section class="panel">
+      <div class="row">
+        <div>
+          <label for="paperId">Paper ID</label>
+          <input id="paperId" placeholder="paper assemble karne ke baad jo ID milti hai" />
+        </div>
+        <div style="flex:0 0 auto">
+          <button onclick="loadLatest()">Dashboard dekhen</button>
+        </div>
+      </div>
+
+      <div id="uploadPicker" class="hidden">
+        <label for="uploadSelect">Kaunsa upload (newest pehle)</label>
+        <select id="uploadSelect" onchange="onUploadChange()"></select>
+      </div>
+
+      <div id="status"></div>
+    </section>
+
+    <div id="dashboard" class="hidden">
+      <section class="panel" id="summary">
+        <h2>Class summary</h2>
+        <div id="cards" class="cards"></div>
+      </section>
+
+      <section class="panel" id="students">
+        <h2>Student results &amp; ranking</h2>
+        <div id="studentsWrap"></div>
+      </section>
+
+      <section class="panel" id="questions">
+        <h2>Per-question difficulty</h2>
+        <p class="sub">Kam average % = class ne is sawaal mein struggle kiya.</p>
+        <div id="questionsWrap"></div>
+      </section>
+
+      <section class="panel" id="bloom">
+        <h2>Bloom's Taxonomy breakdown</h2>
+        <p class="sub">Kaunse cognitive levels kamzor hain — marks-weighted average.</p>
+        <div id="bloomWrap"></div>
+      </section>
     </div>
-  </div>
-
-  <div id="uploadPicker" class="hidden">
-    <label for="uploadSelect">Kaunsa upload (newest pehle)</label>
-    <select id="uploadSelect" onchange="onUploadChange()"></select>
-  </div>
-
-  <div id="status"></div>
-
-  <div id="dashboard" class="hidden">
-    <h2>Class summary</h2>
-    <div id="cards" class="cards"></div>
-
-    <h2>Student results &amp; ranking</h2>
-    <div id="studentsWrap"></div>
-
-    <h2>Per-question difficulty</h2>
-    <p class="sub">Kam average % = class ne is sawaal mein struggle kiya.</p>
-    <div id="questionsWrap"></div>
-
-    <h2>Bloom's Taxonomy breakdown</h2>
-    <p class="sub">Kaunse cognitive levels kamzor hain — marks-weighted average.</p>
-    <div id="bloomWrap"></div>
-  </div>
+  </main>
 
 <script>
 // Canonical Bloom order (lowest → highest cognitive level) for stable display.
