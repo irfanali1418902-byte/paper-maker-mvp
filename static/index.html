@@ -43,7 +43,7 @@
   a { text-decoration: none; color: inherit; }
   .urdu, .ur {
     direction: rtl;
-    font-family: 'Noto Nastaliq Urdu', serif;
+    font-family: 'Jameel Noori Nastaleeq', 'Noto Nastaliq Urdu', serif;
     line-height: 2;
   }
 
@@ -168,7 +168,7 @@
   }
   .paper-sheet .ph-head { text-align: center; border-bottom: 2.5px solid var(--ink); padding-bottom: 14px; margin-bottom: 16px; }
   .paper-sheet .ph-en { font-family: 'Source Serif 4', Georgia, serif; font-size: 20px; font-weight: 700; }
-  .paper-sheet .ph-ur { font-family: 'Noto Nastaliq Urdu', serif; font-size: 17px; margin: 4px 0; direction: rtl; }
+  .paper-sheet .ph-ur { font-family: 'Jameel Noori Nastaleeq', 'Noto Nastaliq Urdu', serif; font-size: 17px; margin: 4px 0; direction: rtl; }
   .paper-sheet .ph-exam { font-size: 12.5px; color: var(--muted); }
   .paper-sheet .ph-meta {
     display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px;
@@ -178,7 +178,7 @@
   .paper-sheet .ph-sec { font-family: 'Source Serif 4', Georgia, serif; font-weight: 700; font-size: 15px; margin: 16px 0 10px; }
   .paper-sheet .ph-q { margin-bottom: 14px; }
   .paper-sheet .ph-q .q-en { font-weight: 500; }
-  .paper-sheet .ph-q .q-ur { text-align: right; font-size: 15px; color: #3A3A3A; direction: rtl; font-family: 'Noto Nastaliq Urdu', serif; }
+  .paper-sheet .ph-q .q-ur { text-align: right; font-size: 15px; color: #3A3A3A; direction: rtl; font-family: 'Jameel Noori Nastaleeq', 'Noto Nastaliq Urdu', serif; }
   .paper-sheet .ph-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 24px; color: #3A3A3A; margin-top: 5px; }
   .paper-empty { color: var(--muted2); text-align: center; padding: 40px 20px; font-size: 14px; }
 
@@ -230,6 +230,38 @@
   .flag-reason { font-size: 12px; color: var(--err-tx); }
   .an-empty { color: var(--muted); font-size: 14px; padding: 10px 0; }
 
+  /* ---- Urdu / RTL ---- */
+  /* Jameel Noori Nastaleeq is NOT bundled — used only if installed on the
+     machine (same assumption the Word export makes); else Noto Nastaliq Urdu. */
+  @font-face {
+    font-family: 'Jameel Noori Nastaleeq';
+    src: local('Jameel Noori Nastaleeq'), local('Jameel Noori Nastalique'), local('JameelNooriNastaleeq');
+    font-display: swap;
+  }
+  .lang-toggle { display: flex; border: 1px solid rgba(255,255,255,.25); border-radius: 8px; overflow: hidden; margin: 0 22px 16px; }
+  .lang-toggle button {
+    flex: 1; background: transparent; color: #9DB0D0; border: none;
+    padding: 6px 0; min-height: 0; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  }
+  .lang-toggle button[data-active="1"] { background: var(--primary); color: #fff; }
+  .lang-toggle button.urdu { direction: rtl; font-size: 13.5px; }
+
+  /* In Urdu mode the whole UI switches to the Nastaliq stack. */
+  body.lang-ur { font-family: 'Jameel Noori Nastaleeq', 'Noto Nastaliq Urdu', 'IBM Plex Sans', sans-serif; }
+  body.lang-ur .h1 { line-height: 1.7; }
+  body.lang-ur .nav-link, body.lang-ur .nav-i { line-height: 1.9; }
+
+  /* RTL structural fixes for the bits dir=rtl doesn't get right on its own. */
+  [dir="rtl"] .nav-link { border-left: none; border-right: 3px solid transparent; }
+  [dir="rtl"] .nav-link[data-active="1"] { border-right-color: #5B8DEF; }
+  [dir="rtl"] table.an th, [dir="rtl"] table.an td,
+  [dir="rtl"] .summary-box th, [dir="rtl"] .summary-box td { text-align: right; }
+  [dir="rtl"] table.an td.num, [dir="rtl"] table.an th.num { text-align: left; }
+  [dir="rtl"] .an-legend .dot { margin-right: 0; margin-left: 5px; }
+  [dir="rtl"] .question-card ul { padding-left: 0; padding-right: 20px; }
+  /* The exam-paper preview is a fixed document — keep it LTR even in Urdu UI. */
+  [dir="rtl"] .paper-sheet { direction: ltr; }
+
   /* ---- Responsive: sidebar -> bottom tab bar (Direction A on mobile) ---- */
   @media (max-width: 1024px) { .twocol { grid-template-columns: 1fr; } }
   @media (max-width: 760px) {
@@ -275,19 +307,23 @@
   <aside class="sidebar">
     <div class="brand">
       <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5"></path><path d="M19 8v11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h8z"></path><path d="M9 13h6M9 17h4"></path></svg></div>
-      <div><div class="name">AII Smart Paper Maker</div><div class="tag">Phase 1 · MVP</div></div>
+      <div><div class="name">AII Smart Paper Maker</div><div class="tag" data-i18n="brand.tag">Phase 1 · MVP</div></div>
     </div>
-    <div class="nav-label">Workspace</div>
+    <div class="lang-toggle">
+      <button data-lang-opt="en" data-active="1" onclick="applyLang('en')">EN</button>
+      <button data-lang-opt="ur" data-active="0" class="urdu" onclick="applyLang('ur')">اردو</button>
+    </div>
+    <div class="nav-label" data-i18n="sidebar.workspace">Workspace</div>
     <nav>
-      <a class="nav-link" data-nav="generate" data-active="1" onclick="showScreen('generate')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>Generate paper</a>
-      <a class="nav-link" data-nav="syllabus" onclick="showScreen('syllabus')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="M7 9l5-5 5 5"></path><path d="M4 20h16"></path></svg>Syllabus upload</a>
-      <a class="nav-link" data-nav="adaptive" onclick="showScreen('adaptive')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="3.4"></circle></svg>Adaptive paper</a>
-      <a class="nav-link" data-nav="results" onclick="showScreen('results')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="20" x2="20" y2="20"></line><rect x="6" y="11" width="3" height="7" fill="currentColor" stroke="none"></rect><rect x="11" y="6" width="3" height="12" fill="currentColor" stroke="none"></rect><rect x="16" y="14" width="3" height="4" fill="currentColor" stroke="none"></rect></svg>Results &amp; preview</a>
-      <a class="nav-link" data-nav="analytics" onclick="showScreen('analytics')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9"></path><path d="M21 3v6h-6"></path><path d="M12 12 21 3"></path></svg>Analytics</a>
-      <a class="nav-link" data-nav="settings" onclick="showScreen('settings')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 9.5 12 4l9 5.5"></path><path d="M5 11v8h14v-8"></path><path d="M9 19v-5h6v5"></path></svg>More / settings</a>
+      <a class="nav-link" data-nav="generate" data-active="1" onclick="showScreen('generate')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg><span data-i18n="nav.generate">Generate paper</span></a>
+      <a class="nav-link" data-nav="syllabus" onclick="showScreen('syllabus')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="M7 9l5-5 5 5"></path><path d="M4 20h16"></path></svg><span data-i18n="nav.syllabus">Syllabus upload</span></a>
+      <a class="nav-link" data-nav="adaptive" onclick="showScreen('adaptive')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="3.4"></circle></svg><span data-i18n="nav.adaptive">Adaptive paper</span></a>
+      <a class="nav-link" data-nav="results" onclick="showScreen('results')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="20" x2="20" y2="20"></line><rect x="6" y="11" width="3" height="7" fill="currentColor" stroke="none"></rect><rect x="11" y="6" width="3" height="12" fill="currentColor" stroke="none"></rect><rect x="16" y="14" width="3" height="4" fill="currentColor" stroke="none"></rect></svg><span data-i18n="nav.results">Results &amp; preview</span></a>
+      <a class="nav-link" data-nav="analytics" onclick="showScreen('analytics')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9"></path><path d="M21 3v6h-6"></path><path d="M12 12 21 3"></path></svg><span data-i18n="nav.analytics">Analytics</span></a>
+      <a class="nav-link" data-nav="settings" onclick="showScreen('settings')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 9.5 12 4l9 5.5"></path><path d="M5 11v8h14v-8"></path><path d="M9 19v-5h6v5"></path></svg><span data-i18n="nav.settings">More / settings</span></a>
     </nav>
     <div class="sidebar-foot">
-      <div class="box">AI · bilingual · Bloom-tagged questions &amp; balanced papers.</div>
+      <div class="box" data-i18n="sidebar.foot">AI · bilingual · Bloom-tagged questions &amp; balanced papers.</div>
     </div>
   </aside>
 
@@ -299,7 +335,11 @@
       <div style="height:env(safe-area-inset-top,0px);"></div>
       <div class="row">
         <div class="logo"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5"></path><path d="M19 8v11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h8z"></path><path d="M9 13h6M9 17h4"></path></svg></div>
-        <div style="flex:1; min-width:0;"><div class="name">AII Smart Paper Maker</div><div class="tag">Phase 1 · MVP</div></div>
+        <div style="flex:1; min-width:0;"><div class="name">AII Smart Paper Maker</div><div class="tag" data-i18n="brand.tag">Phase 1 · MVP</div></div>
+        <div class="lang-toggle" style="margin:0; flex:0 0 auto; width:96px;">
+          <button data-lang-opt="en" data-active="1" onclick="applyLang('en')">EN</button>
+          <button data-lang-opt="ur" data-active="0" class="urdu" onclick="applyLang('ur')">اردو</button>
+        </div>
       </div>
     </div>
 
@@ -308,72 +348,72 @@
       <!-- ===== GENERATE ===== -->
       <section class="screen" data-screen="generate" data-active="1">
         <div class="head">
-          <div><h1 class="h1">Generate paper</h1><p class="sub desktop-only">AI se bilingual, Bloom-tagged questions banayein, phir balanced paper assemble karein.</p></div>
+          <div><h1 class="h1" data-i18n="gen.title">Generate paper</h1><p class="sub desktop-only" data-i18n="gen.sub">AI se bilingual, Bloom-tagged questions banayein, phir balanced paper assemble karein.</p></div>
         </div>
-        <p class="sub mobile-only" style="margin:2px 0 16px">AI se bilingual, Bloom-tagged questions banayein, phir balanced paper assemble karein.</p>
+        <p class="sub mobile-only" style="margin:2px 0 16px" data-i18n="gen.sub">AI se bilingual, Bloom-tagged questions banayein, phir balanced paper assemble karein.</p>
 
         <div class="twocol">
           <div class="card">
-            <label>Class/Grade select karen</label>
+            <label data-i18n="form.classGrade">Class/Grade select karen</label>
             <select id="syllabusGrade" onchange="onGradeChange()">
               <option value="">-- Loading classes... --</option>
             </select>
 
-            <label>Ya syllabus se topic select karen</label>
+            <label data-i18n="form.syllabusTopic">Ya syllabus se topic select karen</label>
             <select id="syllabusTopic" onchange="onSyllabusTopicChange()">
               <option value="">-- Pehle class select karen --</option>
             </select>
 
             <div class="field-row">
               <div>
-                <label>Subject</label>
+                <label data-i18n="form.subject">Subject</label>
                 <input id="subject" placeholder="e.g. Mathematics" value="Mathematics" />
               </div>
               <div>
-                <label>Topic</label>
+                <label data-i18n="form.topic">Topic</label>
                 <input id="topic" placeholder="e.g. Fractions" value="Fractions" />
               </div>
             </div>
 
             <div class="field-row">
               <div>
-                <label>Total questions</label>
+                <label data-i18n="form.totalQuestions">Total questions</label>
                 <input id="totalQuestions" type="number" value="10" />
               </div>
               <div>
-                <label>Difficulty</label>
+                <label data-i18n="form.difficulty">Difficulty</label>
                 <select id="difficulty">
-                  <option value="easy">Easy</option>
-                  <option value="medium" selected>Medium</option>
-                  <option value="hard">Hard</option>
+                  <option value="easy" data-i18n="opt.easy">Easy</option>
+                  <option value="medium" selected data-i18n="opt.medium">Medium</option>
+                  <option value="hard" data-i18n="opt.hard">Hard</option>
                 </select>
               </div>
             </div>
 
-            <label>Bloom distribution</label>
+            <label data-i18n="form.bloomDist">Bloom distribution</label>
             <select id="bloomDist">
-              <option value="balanced">Balanced</option>
-              <option value="foundational">Foundational</option>
-              <option value="advanced">Advanced</option>
+              <option value="balanced" data-i18n="opt.balanced">Balanced</option>
+              <option value="foundational" data-i18n="opt.foundational">Foundational</option>
+              <option value="advanced" data-i18n="opt.advanced">Advanced</option>
             </select>
 
             <div class="actions">
-              <button class="gen-btn" onclick="generateQuestions()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4 12.7 8.3 17 10 12.7 11.7 11 16 9.3 11.7 5 10 9.3 8.3z"></path></svg>1. Generate questions (AI)</button>
-              <button class="ghost-btn" onclick="buildPaper()">2. Build paper from bank</button>
+              <button class="gen-btn" onclick="generateQuestions()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4 12.7 8.3 17 10 12.7 11.7 11 16 9.3 11.7 5 10 9.3 8.3z"></path></svg><span data-i18n="btn.genQuestions">1. Generate questions (AI)</span></button>
+              <button class="ghost-btn" onclick="buildPaper()" data-i18n="btn.buildPaper">2. Build paper from bank</button>
             </div>
           </div>
 
           <div class="stack">
             <div class="card" style="padding:18px;">
-              <div class="card-title">This paper</div>
-              <div class="summary-row"><span>Subject</span><b id="sumSubject">Mathematics</b></div>
-              <div class="summary-row"><span>Topic</span><b id="sumTopic">Fractions</b></div>
-              <div class="summary-row"><span>Questions</span><b id="sumCount">10</b></div>
-              <div class="summary-row"><span>Language</span><b>Urdu + English</b></div>
+              <div class="card-title" data-i18n="card.thisPaper">This paper</div>
+              <div class="summary-row"><span data-i18n="sum.subject">Subject</span><b id="sumSubject">Mathematics</b></div>
+              <div class="summary-row"><span data-i18n="sum.topic">Topic</span><b id="sumTopic">Fractions</b></div>
+              <div class="summary-row"><span data-i18n="sum.questions">Questions</span><b id="sumCount">10</b></div>
+              <div class="summary-row"><span data-i18n="sum.language">Language</span><b data-i18n="sum.langValue">Urdu + English</b></div>
             </div>
             <div class="tip">
-              <div class="k">Tip</div>
-              <div class="v">Pehle <b>Syllabus upload</b> karein to topic dropdown khud bhar jayega.</div>
+              <div class="k" data-i18n="tip.label">Tip</div>
+              <div class="v" data-i18n-html="tip.generate">Pehle <b>Syllabus upload</b> karein to topic dropdown khud bhar jayega.</div>
             </div>
           </div>
         </div>
@@ -381,57 +421,57 @@
 
       <!-- ===== SYLLABUS ===== -->
       <section class="screen" data-screen="syllabus">
-        <div class="head"><div><h1 class="h1">Syllabus upload</h1><p class="sub">PDF/textbook upload karen — AI usme se topics nikaal kar save karega. Phir wo "Class select" dropdown mein aa jayenge.</p></div></div>
+        <div class="head"><div><h1 class="h1" data-i18n="syl.title">Syllabus upload</h1><p class="sub" data-i18n="syl.sub">PDF/textbook upload karen — AI usme se topics nikaal kar save karega. Phir wo "Class select" dropdown mein aa jayenge.</p></div></div>
 
         <div class="twocol">
           <div class="card">
-            <label>Subject</label>
+            <label data-i18n="form.subject">Subject</label>
             <input id="pdfSubject" placeholder="e.g. Mathematics" />
 
-            <label>Class/Grade</label>
+            <label data-i18n="form.classGrade2">Class/Grade</label>
             <input id="pdfGrade" placeholder="e.g. Grade 4" />
 
-            <label>Single PDF (text-based ya scanned)</label>
+            <label data-i18n="form.singlePdf">Single PDF (text-based ya scanned)</label>
             <input type="file" id="pdfFile" accept=".pdf" />
             <div class="actions">
-              <button class="gen-btn" id="pdfUploadBtn" onclick="uploadSyllabusPdf()">Upload &amp; extract topics</button>
+              <button class="gen-btn" id="pdfUploadBtn" onclick="uploadSyllabusPdf()" data-i18n="btn.uploadExtract">Upload &amp; extract topics</button>
             </div>
             <span id="pdfStatus" style="display:inline-block;margin-top:10px;font-size:13px;color:var(--muted)"></span>
 
             <hr />
 
-            <label>Ya ZIP (multiple PDF + images JPG/PNG)</label>
+            <label data-i18n="form.zip">Ya ZIP (multiple PDF + images JPG/PNG)</label>
             <input type="file" id="zipFile" accept=".zip" />
             <div class="actions">
-              <button class="ghost-btn" id="zipUploadBtn" onclick="uploadSyllabusZip()">Upload ZIP &amp; extract topics</button>
+              <button class="ghost-btn" id="zipUploadBtn" onclick="uploadSyllabusZip()" data-i18n="btn.uploadZip">Upload ZIP &amp; extract topics</button>
             </div>
             <span id="zipStatus" style="display:inline-block;margin-top:10px;font-size:13px;color:var(--muted)"></span>
             <div id="zipFileResults" style="margin-top:10px"></div>
           </div>
 
           <div class="tip">
-            <div class="k">How it works</div>
-            <div class="v">AII PDF/images parse karke chapters aur sub-topics nikaalta hai, phir unhe save kar deta hai. Subject + grade dono bharna zaroori hai.</div>
+            <div class="k" data-i18n="tip.howItWorks">How it works</div>
+            <div class="v" data-i18n="tip.howItWorksBody">AII PDF/images parse karke chapters aur sub-topics nikaalta hai, phir unhe save kar deta hai. Subject + grade dono bharna zaroori hai.</div>
           </div>
         </div>
       </section>
 
       <!-- ===== ADAPTIVE ===== -->
       <section class="screen" data-screen="adaptive">
-        <div class="head"><div><h1 class="h1">Adaptive paper</h1><p class="sub">Kisi paper ke uploaded results se class ki weak Bloom levels nikaal kar un par focus karta naya paper banayen.</p></div></div>
+        <div class="head"><div><h1 class="h1" data-i18n="adapt.title">Adaptive paper</h1><p class="sub" data-i18n="adapt.sub">Kisi paper ke uploaded results se class ki weak Bloom levels nikaal kar un par focus karta naya paper banayen.</p></div></div>
 
         <div class="twocol">
           <div class="card">
-            <label>Learn from paper ID (jiska result upload hua hai)</label>
+            <label data-i18n="form.learnFrom">Learn from paper ID (jiska result upload hua hai)</label>
             <input id="adaptiveSourceId" placeholder="e.g. 4a0af91b-..." />
-            <p class="sub" style="margin-top:10px">Total questions aur difficulty upar "Generate paper" screen ke fields se liye jate hain.</p>
+            <p class="sub" style="margin-top:10px" data-i18n="adapt.note">Total questions aur difficulty upar "Generate paper" screen ke fields se liye jate hain.</p>
             <div class="actions">
-              <button class="gen-btn" onclick="buildAdaptivePaper()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4 12.7 8.3 17 10 12.7 11.7 11 16 9.3 11.7 5 10 9.3 8.3z"></path></svg>Generate adaptive paper</button>
+              <button class="gen-btn" onclick="buildAdaptivePaper()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4 12.7 8.3 17 10 12.7 11.7 11 16 9.3 11.7 5 10 9.3 8.3z"></path></svg><span data-i18n="btn.genAdaptive">Generate adaptive paper</span></button>
             </div>
           </div>
           <div class="tip">
-            <div class="k">AII suggests</div>
-            <div class="v">Jin Bloom levels par class sab se kam score karti hai, un par zyada questions allocate kiye jate hain — taake practice un kamzoriyon par ho.</div>
+            <div class="k" data-i18n="tip.aiiSuggests">AII suggests</div>
+            <div class="v" data-i18n="tip.aiiSuggestsBody">Jin Bloom levels par class sab se kam score karti hai, un par zyada questions allocate kiye jate hain — taake practice un kamzoriyon par ho.</div>
           </div>
         </div>
       </section>
@@ -439,8 +479,8 @@
       <!-- ===== RESULTS & LIVE PREVIEW ===== -->
       <section class="screen" data-screen="results">
         <div class="head">
-          <div><h1 class="h1">Results &amp; preview</h1><p class="sub">Final review se pehle live paper dekh lein, phir export ya dashboard kholein.</p></div>
-          <div class="desktop-only"><button class="ghost-btn" onclick="showScreen('generate')">← Back to generate</button></div>
+          <div><h1 class="h1" data-i18n="results.title">Results &amp; preview</h1><p class="sub" data-i18n="results.sub">Final review se pehle live paper dekh lein, phir export ya dashboard kholein.</p></div>
+          <div class="desktop-only"><button class="ghost-btn" onclick="showScreen('generate')" data-i18n="btn.backGenerate">← Back to generate</button></div>
         </div>
         <div id="status"></div>
 
@@ -448,11 +488,11 @@
           <div>
             <!-- Direction C: live bilingual serif paper sheet -->
             <div id="paperPreview" class="paper-sheet">
-              <div class="paper-empty">Abhi koi paper nahi bana. "Generate paper" screen par ja kar paper build karein — yahan live preview aa jayegi.</div>
+              <div class="paper-empty" data-i18n="preview.empty">Abhi koi paper nahi bana. "Generate paper" screen par ja kar paper build karein — yahan live preview aa jayegi.</div>
             </div>
 
             <details class="qdetails" id="qdetailsWrap" style="display:none">
-              <summary>Per-question details (Bloom, marks, options)</summary>
+              <summary data-i18n="details.summary">Per-question details (Bloom, marks, options)</summary>
               <div id="adaptiveSummary"></div>
               <div id="balanceSummary"></div>
               <div id="results"></div>
@@ -461,15 +501,15 @@
 
           <div class="stack">
             <div class="card" style="padding:20px;">
-              <div class="card-title">Export &amp; results</div>
+              <div class="card-title" data-i18n="card.exportResults">Export &amp; results</div>
               <div class="actions" style="flex-direction:column; align-items:stretch;">
-                <button class="gen-btn" id="printBtn" style="display:none" onclick="openPrintView()">Print / PDF dekhen</button>
-                <button class="ghost-btn" id="dashboardBtn" style="display:none" onclick="openDashboard()">Result dashboard dekhen</button>
-                <button class="ghost-btn" id="csvDownloadBtn" style="display:none" onclick="downloadResultCSV()">📥 Result CSV download karen</button>
-                <button class="ghost-btn" id="csvUploadBtn" style="display:none" onclick="document.getElementById('csvFileInput').click()">📤 Filled CSV upload karen</button>
+                <button class="gen-btn" id="printBtn" style="display:none" onclick="openPrintView()" data-i18n="btn.print">Print / PDF dekhen</button>
+                <button class="ghost-btn" id="dashboardBtn" style="display:none" onclick="openDashboard()" data-i18n="btn.dashboard">Result dashboard dekhen</button>
+                <button class="ghost-btn" id="csvDownloadBtn" style="display:none" onclick="downloadResultCSV()" data-i18n="btn.csvDownload">📥 Result CSV download karen</button>
+                <button class="ghost-btn" id="csvUploadBtn" style="display:none" onclick="document.getElementById('csvFileInput').click()" data-i18n="btn.csvUpload">📤 Filled CSV upload karen</button>
                 <input type="file" id="csvFileInput" accept=".csv,.xlsx" style="display:none" onchange="uploadResultCSV(this)">
               </div>
-              <p class="sub" style="margin-top:14px">Paper build karne ke baad ye actions enable ho jate hain.</p>
+              <p class="sub" style="margin-top:14px" data-i18n="results.actionsNote">Paper build karne ke baad ye actions enable ho jate hain.</p>
             </div>
           </div>
         </div>
@@ -478,21 +518,21 @@
       <!-- ===== ANALYTICS (item analysis — Phase 2.5) ===== -->
       <section class="screen" data-screen="analytics">
         <div class="head">
-          <div><h1 class="h1">Analytics</h1><p class="sub">Har question ka Difficulty Index (P) aur Discrimination Index (D), plus Bloom comparison — uploaded results se. Real data; dummy nahi.</p></div>
+          <div><h1 class="h1" data-i18n="an.title">Analytics</h1><p class="sub" data-i18n="an.sub">Har question ka Difficulty Index (P) aur Discrimination Index (D), plus Bloom comparison — uploaded results se. Real data; dummy nahi.</p></div>
         </div>
 
         <div class="card" style="margin-bottom:18px">
           <div class="field-row" style="align-items:flex-end">
             <div>
-              <label>Paper ID</label>
+              <label data-i18n="form.paperId">Paper ID</label>
               <input id="anPaperId" placeholder="paper banane ke baad jo ID milti hai (Results screen)" />
             </div>
             <div style="flex:0 0 auto; align-self:flex-end">
-              <button class="gen-btn" onclick="loadAnalytics()">Analytics dekhen</button>
+              <button class="gen-btn" onclick="loadAnalytics()" data-i18n="btn.loadAnalytics">Analytics dekhen</button>
             </div>
           </div>
           <div id="anUploadPicker" style="display:none; margin-top:6px">
-            <label>Kaunsa upload (newest pehle)</label>
+            <label data-i18n="an.uploadPick">Kaunsa upload (newest pehle)</label>
             <select id="anUploadSelect" onchange="onAnUploadChange()"></select>
           </div>
           <div id="anStatus" style="margin-top:10px; font-size:14px; color:var(--muted); min-height:20px"></div>
@@ -502,18 +542,18 @@
           <div id="anCards" class="an-cards"></div>
 
           <div class="card" style="margin-top:18px">
-            <div class="card-title">Per-question item analysis</div>
+            <div class="card-title" data-i18n="an.perQuestion">Per-question item analysis</div>
             <div class="an-legend">
-              <span><i class="dot q-good"></i> Good question</span>
-              <span><i class="dot q-review"></i> Review</span>
-              <span><i class="dot q-bad"></i> Problematic</span>
+              <span><i class="dot q-good"></i> <span data-i18n="legend.good">Good question</span></span>
+              <span><i class="dot q-review"></i> <span data-i18n="legend.review">Review</span></span>
+              <span><i class="dot q-bad"></i> <span data-i18n="legend.problematic">Problematic</span></span>
             </div>
             <div style="overflow-x:auto"><div id="anQuestionsWrap"></div></div>
           </div>
 
           <div class="card" style="margin-top:18px">
-            <div class="card-title">Bloom's Taxonomy comparison</div>
-            <p class="sub" style="margin-top:2px">Kaunse cognitive levels kamzor hain — marks-weighted average.</p>
+            <div class="card-title" data-i18n="an.bloomCompare">Bloom's Taxonomy comparison</div>
+            <p class="sub" style="margin-top:2px" data-i18n="an.bloomSub">Kaunse cognitive levels kamzor hain — marks-weighted average.</p>
             <div style="overflow-x:auto"><div id="anBloomWrap"></div></div>
           </div>
         </div>
@@ -521,34 +561,34 @@
 
       <!-- ===== SETTINGS ===== -->
       <section class="screen" data-screen="settings">
-        <div class="head"><div><h1 class="h1">School settings</h1><p class="sub">Letterhead / logo — har paper aur print par istemaal hoga.</p></div></div>
+        <div class="head"><div><h1 class="h1" data-i18n="set.title">School settings</h1><p class="sub" data-i18n="set.sub">Letterhead / logo — har paper aur print par istemaal hoga.</p></div></div>
 
         <div class="twocol">
           <div class="card">
-            <label>Logo upload karen</label>
+            <label data-i18n="form.logo">Logo upload karen</label>
             <input type="file" id="logoFile" accept="image/*" onchange="onLogoSelected(event)" />
             <img id="logoPreview" style="display:none;width:60px;height:60px;object-fit:contain;margin-top:8px;border:1px solid var(--border);border-radius:8px" />
 
-            <label>School/Institute name (English)</label>
+            <label data-i18n="form.schoolEn">School/Institute name (English)</label>
             <input id="schoolNameEn" placeholder="e.g. Ameen Islamic Institute" />
 
-            <label>School/Institute name (Urdu)</label>
-            <input id="schoolNameUr" class="urdu" placeholder="e.g. امین اسلامک انسٹیٹیوٹ" dir="rtl" style="font-family:'Noto Nastaliq Urdu',serif" />
+            <label data-i18n="form.schoolUr">School/Institute name (Urdu)</label>
+            <input id="schoolNameUr" class="urdu" placeholder="e.g. امین اسلامک انسٹیٹیوٹ" dir="rtl" style="font-family:'Jameel Noori Nastaleeq', 'Noto Nastaliq Urdu',serif" />
 
-            <label>Address</label>
+            <label data-i18n="form.address">Address</label>
             <input id="schoolAddress" placeholder="e.g. Swat, Khyber Pakhtunkhwa" />
 
-            <label>Accent colour (letterhead line)</label>
+            <label data-i18n="form.accent">Accent colour (letterhead line)</label>
             <input id="accentColor" type="color" value="#0e4d3c" style="min-height:48px;cursor:pointer;padding:4px" />
 
             <div class="actions">
-              <button class="gen-btn" onclick="saveSchoolSettings()">Settings save karen</button>
+              <button class="gen-btn" onclick="saveSchoolSettings()" data-i18n="btn.saveSettings">Settings save karen</button>
             </div>
             <span id="settingsStatus" style="display:inline-block;margin-top:10px;font-size:13px;color:var(--muted)"></span>
           </div>
 
           <div class="card" style="padding:18px;">
-            <div class="card-title">Header preview</div>
+            <div class="card-title" data-i18n="card.headerPreview">Header preview</div>
             <div style="border:1px solid var(--border); border-radius:10px; padding:16px; text-align:center;">
               <div id="hpEn" style="font-family:'Source Serif 4',Georgia,serif; font-size:15px; font-weight:700;">Government High School</div>
               <div id="hpUr" class="urdu" style="font-size:14px; margin:3px 0;"></div>
@@ -562,12 +602,12 @@
 
     <!-- bottom nav (mobile) -->
     <div class="bottomnav">
-      <div class="nav-i" data-nav="generate" data-active="1" onclick="showScreen('generate')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>Generate</div>
-      <div class="nav-i" data-nav="syllabus" onclick="showScreen('syllabus')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="M7 9l5-5 5 5"></path><path d="M4 20h16"></path></svg>Syllabus</div>
-      <div class="nav-i" data-nav="adaptive" onclick="showScreen('adaptive')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="3.4"></circle></svg>Adaptive</div>
-      <div class="nav-i" data-nav="results" onclick="showScreen('results')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="20" x2="20" y2="20"></line><rect x="6" y="11" width="3" height="7" fill="currentColor" stroke="none"></rect><rect x="11" y="6" width="3" height="12" fill="currentColor" stroke="none"></rect><rect x="16" y="14" width="3" height="4" fill="currentColor" stroke="none"></rect></svg>Results</div>
-      <div class="nav-i" data-nav="analytics" onclick="showScreen('analytics')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9"></path><path d="M21 3v6h-6"></path><path d="M12 12 21 3"></path></svg>Analytics</div>
-      <div class="nav-i" data-nav="settings" onclick="showScreen('settings')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="17" x2="20" y2="17"></line></svg>More</div>
+      <div class="nav-i" data-nav="generate" data-active="1" onclick="showScreen('generate')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg><span data-i18n="navShort.generate">Generate</span></div>
+      <div class="nav-i" data-nav="syllabus" onclick="showScreen('syllabus')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="M7 9l5-5 5 5"></path><path d="M4 20h16"></path></svg><span data-i18n="navShort.syllabus">Syllabus</span></div>
+      <div class="nav-i" data-nav="adaptive" onclick="showScreen('adaptive')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="3.4"></circle></svg><span data-i18n="navShort.adaptive">Adaptive</span></div>
+      <div class="nav-i" data-nav="results" onclick="showScreen('results')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="20" x2="20" y2="20"></line><rect x="6" y="11" width="3" height="7" fill="currentColor" stroke="none"></rect><rect x="11" y="6" width="3" height="12" fill="currentColor" stroke="none"></rect><rect x="16" y="14" width="3" height="4" fill="currentColor" stroke="none"></rect></svg><span data-i18n="navShort.results">Results</span></div>
+      <div class="nav-i" data-nav="analytics" onclick="showScreen('analytics')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9"></path><path d="M21 3v6h-6"></path><path d="M12 12 21 3"></path></svg><span data-i18n="navShort.analytics">Analytics</span></div>
+      <div class="nav-i" data-nav="settings" onclick="showScreen('settings')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="17" x2="20" y2="17"></line></svg><span data-i18n="navShort.more">More</span></div>
     </div>
   </div>
 </div>
@@ -576,6 +616,192 @@
 let logoBase64 = null;
 let currentPaperId = null;
 let selectedSyllabusTopicId = null;
+let currentLang = 'en';
+
+// ===== i18n (EN / Urdu) =====
+// `en` values are the app's existing strings verbatim; `ur` are translations.
+// Keys map to data-i18n (textContent), data-i18n-html (innerHTML) attributes.
+const I18N = {
+  en: {
+    'brand.tag': 'Phase 1 · MVP',
+    'sidebar.workspace': 'Workspace',
+    'sidebar.foot': 'AI · bilingual · Bloom-tagged questions & balanced papers.',
+    'nav.generate': 'Generate paper',
+    'nav.syllabus': 'Syllabus upload',
+    'nav.adaptive': 'Adaptive paper',
+    'nav.results': 'Results & preview',
+    'nav.analytics': 'Analytics',
+    'nav.settings': 'More / settings',
+    'gen.title': 'Generate paper',
+    'gen.sub': 'AI se bilingual, Bloom-tagged questions banayein, phir balanced paper assemble karein.',
+    'form.classGrade': 'Class/Grade select karen',
+    'form.syllabusTopic': 'Ya syllabus se topic select karen',
+    'form.subject': 'Subject',
+    'form.topic': 'Topic',
+    'form.totalQuestions': 'Total questions',
+    'form.difficulty': 'Difficulty',
+    'form.bloomDist': 'Bloom distribution',
+    'opt.easy': 'Easy', 'opt.medium': 'Medium', 'opt.hard': 'Hard',
+    'opt.balanced': 'Balanced', 'opt.foundational': 'Foundational', 'opt.advanced': 'Advanced',
+    'btn.genQuestions': '1. Generate questions (AI)',
+    'btn.buildPaper': '2. Build paper from bank',
+    'card.thisPaper': 'This paper',
+    'sum.subject': 'Subject', 'sum.topic': 'Topic', 'sum.questions': 'Questions',
+    'sum.language': 'Language', 'sum.langValue': 'Urdu + English',
+    'tip.label': 'Tip',
+    'tip.generate': 'Pehle <b>Syllabus upload</b> karein to topic dropdown khud bhar jayega.',
+    'syl.title': 'Syllabus upload',
+    'syl.sub': 'PDF/textbook upload karen — AI usme se topics nikaal kar save karega. Phir wo "Class select" dropdown mein aa jayenge.',
+    'form.classGrade2': 'Class/Grade',
+    'form.singlePdf': 'Single PDF (text-based ya scanned)',
+    'btn.uploadExtract': 'Upload & extract topics',
+    'form.zip': 'Ya ZIP (multiple PDF + images JPG/PNG)',
+    'btn.uploadZip': 'Upload ZIP & extract topics',
+    'tip.howItWorks': 'How it works',
+    'tip.howItWorksBody': 'AII PDF/images parse karke chapters aur sub-topics nikaalta hai, phir unhe save kar deta hai. Subject + grade dono bharna zaroori hai.',
+    'adapt.title': 'Adaptive paper',
+    'adapt.sub': 'Kisi paper ke uploaded results se class ki weak Bloom levels nikaal kar un par focus karta naya paper banayen.',
+    'form.learnFrom': 'Learn from paper ID (jiska result upload hua hai)',
+    'adapt.note': 'Total questions aur difficulty upar "Generate paper" screen ke fields se liye jate hain.',
+    'btn.genAdaptive': 'Generate adaptive paper',
+    'tip.aiiSuggests': 'AII suggests',
+    'tip.aiiSuggestsBody': 'Jin Bloom levels par class sab se kam score karti hai, un par zyada questions allocate kiye jate hain — taake practice un kamzoriyon par ho.',
+    'results.title': 'Results & preview',
+    'results.sub': 'Final review se pehle live paper dekh lein, phir export ya dashboard kholein.',
+    'btn.backGenerate': '← Back to generate',
+    'preview.empty': 'Abhi koi paper nahi bana. "Generate paper" screen par ja kar paper build karein — yahan live preview aa jayegi.',
+    'details.summary': 'Per-question details (Bloom, marks, options)',
+    'card.exportResults': 'Export & results',
+    'btn.print': 'Print / PDF dekhen',
+    'btn.dashboard': 'Result dashboard dekhen',
+    'btn.csvDownload': '📥 Result CSV download karen',
+    'btn.csvUpload': '📤 Filled CSV upload karen',
+    'results.actionsNote': 'Paper build karne ke baad ye actions enable ho jate hain.',
+    'an.title': 'Analytics',
+    'an.sub': 'Har question ka Difficulty Index (P) aur Discrimination Index (D), plus Bloom comparison — uploaded results se. Real data; dummy nahi.',
+    'form.paperId': 'Paper ID',
+    'btn.loadAnalytics': 'Analytics dekhen',
+    'an.uploadPick': 'Kaunsa upload (newest pehle)',
+    'an.perQuestion': 'Per-question item analysis',
+    'legend.good': 'Good question', 'legend.review': 'Review', 'legend.problematic': 'Problematic',
+    'an.bloomCompare': "Bloom's Taxonomy comparison",
+    'an.bloomSub': 'Kaunse cognitive levels kamzor hain — marks-weighted average.',
+    'set.title': 'School settings',
+    'set.sub': 'Letterhead / logo — har paper aur print par istemaal hoga.',
+    'form.logo': 'Logo upload karen',
+    'form.schoolEn': 'School/Institute name (English)',
+    'form.schoolUr': 'School/Institute name (Urdu)',
+    'form.address': 'Address',
+    'form.accent': 'Accent colour (letterhead line)',
+    'btn.saveSettings': 'Settings save karen',
+    'card.headerPreview': 'Header preview',
+    'navShort.generate': 'Generate', 'navShort.syllabus': 'Syllabus', 'navShort.adaptive': 'Adaptive',
+    'navShort.results': 'Results', 'navShort.analytics': 'Analytics', 'navShort.more': 'More',
+  },
+  ur: {
+    'brand.tag': 'فیز 1 · ایم وی پی',
+    'sidebar.workspace': 'ورک اسپیس',
+    'sidebar.foot': 'اے آئی · دو لسانی · بلوم ٹیگ شدہ سوالات اور متوازن پرچے۔',
+    'nav.generate': 'پرچہ بنائیں',
+    'nav.syllabus': 'نصاب اپ لوڈ',
+    'nav.adaptive': 'اڈاپٹیو پرچہ',
+    'nav.results': 'نتائج اور پیش منظر',
+    'nav.analytics': 'تجزیات',
+    'nav.settings': 'مزید / ترتیبات',
+    'gen.title': 'پرچہ بنائیں',
+    'gen.sub': 'اے آئی سے دو لسانی، بلوم ٹیگ شدہ سوالات بنائیں، پھر متوازن پرچہ ترتیب دیں۔',
+    'form.classGrade': 'کلاس/گریڈ منتخب کریں',
+    'form.syllabusTopic': 'یا نصاب سے ٹاپک منتخب کریں',
+    'form.subject': 'مضمون',
+    'form.topic': 'ٹاپک',
+    'form.totalQuestions': 'کل سوالات',
+    'form.difficulty': 'دشواری',
+    'form.bloomDist': 'بلوم تقسیم',
+    'opt.easy': 'آسان', 'opt.medium': 'درمیانہ', 'opt.hard': 'مشکل',
+    'opt.balanced': 'متوازن', 'opt.foundational': 'بنیادی', 'opt.advanced': 'اعلیٰ',
+    'btn.genQuestions': '۱۔ سوالات بنائیں (اے آئی)',
+    'btn.buildPaper': '۲۔ بینک سے پرچہ بنائیں',
+    'card.thisPaper': 'یہ پرچہ',
+    'sum.subject': 'مضمون', 'sum.topic': 'ٹاپک', 'sum.questions': 'سوالات',
+    'sum.language': 'زبان', 'sum.langValue': 'اردو + انگریزی',
+    'tip.label': 'مشورہ',
+    'tip.generate': 'پہلے <b>نصاب اپ لوڈ</b> کریں تو ٹاپک ڈراپ ڈاؤن خود بھر جائے گا۔',
+    'syl.title': 'نصاب اپ لوڈ',
+    'syl.sub': 'پی ڈی ایف/نصابی کتاب اپ لوڈ کریں — اے آئی اس میں سے ٹاپکس نکال کر محفوظ کرے گا۔ پھر وہ "کلاس منتخب کریں" ڈراپ ڈاؤن میں آ جائیں گے۔',
+    'form.classGrade2': 'کلاس/گریڈ',
+    'form.singlePdf': 'واحد پی ڈی ایف (ٹیکسٹ یا اسکین شدہ)',
+    'btn.uploadExtract': 'اپ لوڈ کریں اور ٹاپکس نکالیں',
+    'form.zip': 'یا زپ (متعدد پی ڈی ایف + تصاویر JPG/PNG)',
+    'btn.uploadZip': 'زپ اپ لوڈ کریں اور ٹاپکس نکالیں',
+    'tip.howItWorks': 'یہ کیسے کام کرتا ہے',
+    'tip.howItWorksBody': 'اے آئی پی ڈی ایف/تصاویر کو پارس کر کے ابواب اور ذیلی ٹاپکس نکالتا ہے، پھر انہیں محفوظ کر دیتا ہے۔ مضمون اور گریڈ دونوں بھرنا ضروری ہے۔',
+    'adapt.title': 'اڈاپٹیو پرچہ',
+    'adapt.sub': 'کسی پرچے کے اپ لوڈ شدہ نتائج سے کلاس کے کمزور بلوم لیولز نکال کر ان پر توجہ دینے والا نیا پرچہ بنائیں۔',
+    'form.learnFrom': 'پرچہ آئی ڈی سے سیکھیں (جس کا نتیجہ اپ لوڈ ہوا ہے)',
+    'adapt.note': 'کل سوالات اور دشواری اوپر "پرچہ بنائیں" اسکرین کے فیلڈز سے لیے جاتے ہیں۔',
+    'btn.genAdaptive': 'اڈاپٹیو پرچہ بنائیں',
+    'tip.aiiSuggests': 'اے آئی تجویز',
+    'tip.aiiSuggestsBody': 'جن بلوم لیولز پر کلاس سب سے کم اسکور کرتی ہے، ان پر زیادہ سوالات مختص کیے جاتے ہیں — تاکہ ان کمزوریوں پر مشق ہو۔',
+    'results.title': 'نتائج اور پیش منظر',
+    'results.sub': 'حتمی جائزے سے پہلے لائیو پرچہ دیکھ لیں، پھر ایکسپورٹ یا ڈیش بورڈ کھولیں۔',
+    'btn.backGenerate': '← واپس پرچہ بنائیں',
+    'preview.empty': 'ابھی کوئی پرچہ نہیں بنا۔ "پرچہ بنائیں" اسکرین پر جا کر پرچہ بنائیں — یہاں لائیو پیش منظر آ جائے گا۔',
+    'details.summary': 'فی سوال تفصیلات (بلوم، نمبر، آپشنز)',
+    'card.exportResults': 'ایکسپورٹ اور نتائج',
+    'btn.print': 'پرنٹ / پی ڈی ایف دیکھیں',
+    'btn.dashboard': 'نتائج ڈیش بورڈ دیکھیں',
+    'btn.csvDownload': '📥 نتائج CSV ڈاؤن لوڈ کریں',
+    'btn.csvUpload': '📤 بھرا ہوا CSV اپ لوڈ کریں',
+    'results.actionsNote': 'پرچہ بنانے کے بعد یہ ایکشنز فعال ہو جاتے ہیں۔',
+    'an.title': 'تجزیات',
+    'an.sub': 'ہر سوال کا ڈفیکلٹی انڈیکس (P) اور ڈسکریمینیشن انڈیکس (D)، اور بلوم موازنہ — اپ لوڈ شدہ نتائج سے۔ اصل ڈیٹا؛ ڈمی نہیں۔',
+    'form.paperId': 'پرچہ آئی ڈی',
+    'btn.loadAnalytics': 'تجزیات دیکھیں',
+    'an.uploadPick': 'کون سا اپ لوڈ (نیا پہلے)',
+    'an.perQuestion': 'فی سوال آئٹم تجزیہ',
+    'legend.good': 'اچھا سوال', 'legend.review': 'نظرثانی', 'legend.problematic': 'مسئلہ والا',
+    'an.bloomCompare': 'بلوم ٹیکسانومی موازنہ',
+    'an.bloomSub': 'کون سے کوگنیٹو لیولز کمزور ہیں — نمبروں کے لحاظ سے اوسط۔',
+    'set.title': 'اسکول ترتیبات',
+    'set.sub': 'لیٹر ہیڈ / لوگو — ہر پرچے اور پرنٹ پر استعمال ہوگا۔',
+    'form.logo': 'لوگو اپ لوڈ کریں',
+    'form.schoolEn': 'اسکول/ادارے کا نام (انگریزی)',
+    'form.schoolUr': 'اسکول/ادارے کا نام (اردو)',
+    'form.address': 'پتہ',
+    'form.accent': 'ایکسنٹ رنگ (لیٹر ہیڈ لائن)',
+    'btn.saveSettings': 'ترتیبات محفوظ کریں',
+    'card.headerPreview': 'ہیڈر پیش منظر',
+    'navShort.generate': 'پرچہ', 'navShort.syllabus': 'نصاب', 'navShort.adaptive': 'اڈاپٹیو',
+    'navShort.results': 'نتائج', 'navShort.analytics': 'تجزیات', 'navShort.more': 'مزید',
+  },
+};
+
+function applyLang(lang) {
+  const dict = I18N[lang] || I18N.en;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const t = dict[el.dataset.i18n];
+    if (t != null) el.textContent = t;
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const t = dict[el.dataset.i18nHtml];
+    if (t != null) el.innerHTML = t;
+  });
+  const rtl = lang === 'ur';
+  document.documentElement.lang = lang;
+  document.documentElement.dir = rtl ? 'rtl' : 'ltr';
+  document.body.classList.toggle('lang-ur', rtl);
+  document.querySelectorAll('[data-lang-opt]').forEach(b => {
+    b.dataset.active = (b.dataset.langOpt === lang) ? '1' : '0';
+  });
+  currentLang = lang;
+  try { localStorage.setItem('pm_lang', lang); } catch (e) { /* private mode — ignore */ }
+}
+
+function initLang() {
+  let saved = 'en';
+  try { saved = localStorage.getItem('pm_lang') || 'en'; } catch (e) { /* ignore */ }
+  applyLang(saved === 'ur' ? 'ur' : 'en');
+}
 
 // ---- Screen switching (sidebar desktop / bottom tab bar mobile) ----
 function showScreen(name) {
@@ -1263,6 +1489,9 @@ function escapeHtml(s) {
 
 function val(id) { return document.getElementById(id).value; }
 function setStatus(msg) { document.getElementById('status').textContent = msg; }
+
+// Apply saved language (or default EN) on load.
+initLang();
 </script>
 </body>
 </html>
