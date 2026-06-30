@@ -21,94 +21,113 @@
     --border: #E3E8F1;
     --line: #EDF0F5;
     --surface: #FFFFFF;
-    --bg: #F5F7FB;
+    --bg: #EEF1F6;
     --ok-bg: #E6F4EC;   --ok-tx: #2E7D5B;
     --warn-bg: #FBF1DF; --warn-tx: #B5760E;
     --err-bg: #FBE9E7;  --err-tx: #C0392B;
-    --radius-card: 10px;
-    --radius-btn: 8px;
-    --shadow: 0 2px 10px rgba(22,33,58,.04);
+    --radius-card: 16px;
+    --radius-btn: 12px;
+    --shadow: 0 2px 12px rgba(22,33,58,.05);
   }
 
   * { box-sizing: border-box; }
-
+  html, body { margin: 0; height: 100%; }
   body {
     font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    color: var(--ink);
-    margin: 0;
-    background: var(--bg);
-    display: flex;
-    min-height: 100vh;
+    color: var(--ink); background: var(--bg);
+    -webkit-font-smoothing: antialiased;
   }
-  a { color: var(--primary); }
+  a { text-decoration: none; color: var(--primary); }
+  .urdu { direction: rtl; font-family: 'Jameel Noori Nastaleeq', 'Noto Nastaliq Urdu', serif; }
 
-  /* ---- Sidebar (Direction A — Institutional, deep navy) ---- */
-  .app-sidebar {
-    width: 248px;
-    flex-shrink: 0;
-    background: var(--navy);
-    color: #fff;
-    padding: 24px 18px;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
+  /* Jameel Noori Nastaleeq is NOT bundled — used only if installed on the
+     machine; else falls back to Noto Nastaliq Urdu. */
+  @font-face {
+    font-family: 'Jameel Noori Nastaleeq';
+    src: local('Jameel Noori Nastaleeq'), local('Jameel Noori Nastalique'), local('JameelNooriNastaleeq');
+    font-display: swap;
   }
-  .brand { font-weight: 700; font-size: 18px; line-height: 1.3; }
-  .brand small { display: block; font-weight: 400; font-size: 12px; color: #A9B6CE; margin-top: 4px; }
-  .app-nav { margin-top: 26px; display: flex; flex-direction: column; gap: 2px; }
-  .app-nav a {
-    color: #C7D2E6; text-decoration: none; font-size: 14px;
-    padding: 9px 12px; border-radius: 8px; font-weight: 500;
-  }
-  .app-nav a:hover { background: rgba(255,255,255,.08); color: #fff; }
-  .sidebar-foot { margin-top: auto; font-size: 12px; color: #8092B0; line-height: 1.6; }
 
-  /* ---- Main content ---- */
-  .app-main { flex: 1; min-width: 0; padding: 28px 30px; max-width: 1080px; }
-  .page-head h1 { font-size: 22px; margin: 0 0 4px; font-weight: 700; }
-  p.sub { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
+  /* ---- Shell + navy sidebar (matches the main app) ---- */
+  .shell { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 248px; flex-shrink: 0; background: var(--navy); color: #fff;
+    display: flex; flex-direction: column; padding: 18px 0;
+    position: sticky; top: 0; height: 100vh;
+  }
+  .brand { display: flex; align-items: center; gap: 11px; padding: 2px 22px 18px; }
+  .brand .logo {
+    width: 40px; height: 40px; border-radius: 11px; background: var(--primary);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .brand .name { font-weight: 700; font-size: 15.5px; line-height: 1.15; }
+  .brand .tag { font-size: 10.5px; color: #9DB0D0; letter-spacing: .04em; }
+  .lang-toggle { display: flex; border: 1px solid rgba(255,255,255,.25); border-radius: 8px; overflow: hidden; margin: 0 22px 16px; }
+  .lang-toggle button {
+    flex: 1; background: transparent; color: #9DB0D0; border: none;
+    padding: 6px 0; min-height: 0; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .lang-toggle button[data-active="1"] { background: var(--primary); color: #fff; }
+  .lang-toggle button.urdu { direction: rtl; font-size: 13.5px; }
+  .nav-label { font-size: 10.5px; color: #6E84AD; letter-spacing: .1em; padding: 6px 22px; text-transform: uppercase; }
+  .nav-link {
+    display: flex; align-items: center; gap: 13px; padding: 11px 22px;
+    color: #C6D2E8; font-size: 14.5px; font-weight: 500; cursor: pointer;
+    border-left: 3px solid transparent;
+  }
+  .nav-link svg { flex-shrink: 0; }
+  .nav-link:hover { background: rgba(255,255,255,.06); color: #fff; }
+  .nav-link.back { color: #9DB0D0; margin-top: 6px; }
+  .sidebar-foot { margin-top: auto; padding: 14px 22px 4px; }
+  .sidebar-foot .box {
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+    border-radius: 11px; padding: 13px; font-size: 12px; color: #C6D2E8; line-height: 1.6;
+  }
+
+  /* ---- Main ---- */
+  .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .topbar { display: none; }
+  .content { padding: 30px 34px; max-width: 1080px; width: 100%; margin: 0 auto; }
+  .page-head h1 { font-size: 24px; margin: 0 0 4px; font-weight: 700; }
+  p.sub { color: var(--muted); font-size: 14px; margin: 0 0 18px; }
 
   .panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-card);
-    box-shadow: var(--shadow);
-    padding: 20px;
-    margin-bottom: 16px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-card); box-shadow: var(--shadow);
+    padding: 22px; margin-bottom: 16px;
   }
   .panel h2 { font-size: 16px; margin: 0 0 4px; font-weight: 700; color: var(--ink); }
 
-  label { display: block; margin-top: 14px; font-weight: 600; font-size: 13px; color: var(--ink2); }
+  label { display: block; margin-top: 14px; font-weight: 600; font-size: 12.5px; color: var(--ink2); }
   input, select {
-    width: 100%; padding: 9px 10px; margin-top: 5px;
-    border: 1px solid var(--border); border-radius: 8px;
-    font-size: 14px; font-family: inherit; background: #fff; color: var(--ink);
+    width: 100%; min-height: 48px; padding: 11px 14px; margin-top: 6px;
+    border: 1px solid #D6DEEA; border-radius: 11px;
+    font-size: 15px; font-family: inherit; background: #fff; color: var(--ink);
   }
   input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--tint); }
 
-  button {
-    margin-top: 14px; padding: 10px 16px; background: var(--primary); color: #fff;
-    border: none; border-radius: var(--radius-btn); cursor: pointer;
-    font-size: 14px; font-weight: 600; font-family: inherit;
+  .btn {
+    margin-top: 6px; min-height: 48px; padding: 0 20px; background: var(--primary); color: #fff;
+    border: none; border-radius: 12px; cursor: pointer; font-size: 14.5px; font-weight: 700; font-family: inherit;
   }
-  button:hover { background: var(--primary-hover); }
+  .btn:hover { background: var(--primary-hover); }
   .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
   .row > div { flex: 1; min-width: 220px; }
+  .row > div.narrow { flex: 0 0 auto; min-width: 0; }
 
   #status { margin-top: 14px; font-size: 14px; min-height: 20px; color: var(--muted); }
   #status.error { color: var(--err-tx); }
   #status.ok { color: var(--ok-tx); }
 
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 14px; }
-  .card { border: 1px solid var(--border); border-radius: 10px; padding: 14px; background: #FBFCFE; }
+  .card { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; background: #FBFCFE; }
   .card .value { font-size: 24px; font-weight: 700; color: var(--primary); }
   .card .caption { font-size: 12px; color: var(--muted); margin-top: 4px; }
 
+  .table-wrap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
-  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
-  th { background: var(--tint2); font-size: 13px; color: var(--ink2); }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+  th { background: var(--tint2); font-size: 12.5px; color: var(--ink2); white-space: nowrap; }
   tr:hover td { background: #FAFBFE; }
   td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 
@@ -117,103 +136,256 @@
   .badge.fail { background: var(--err-bg); color: var(--err-tx); }
   .medal { font-size: 15px; }
 
-  /* Horizontal bar used for question + bloom averages */
   .bar-wrap { background: var(--line); border-radius: 5px; height: 16px; width: 140px; overflow: hidden; display: inline-block; vertical-align: middle; }
   .bar { height: 100%; border-radius: 5px; }
-  .bar.good { background: #2E7D5B; }
-  .bar.mid { background: #B5760E; }
-  .bar.weak { background: #C0392B; }
+  .bar.good { background: var(--ok-tx); }
+  .bar.mid { background: var(--warn-tx); }
+  .bar.weak { background: var(--err-tx); }
 
-  /* P-value / D-index cells, coloured by quality band */
   .pd { font-weight: 600; font-variant-numeric: tabular-nums; }
-  .pd.good { color: #2E7D5B; }
-  .pd.mid { color: #B5760E; }
-  .pd.weak { color: #C0392B; }
+  .pd.good { color: var(--ok-tx); }
+  .pd.mid { color: var(--warn-tx); }
+  .pd.weak { color: var(--err-tx); }
   .pd.unreliable { color: var(--muted2); font-weight: 400; }
   tr.flagged td { background: var(--warn-bg); }
   .flag-reason { font-size: 12px; color: var(--err-tx); }
 
   .hidden { display: none; }
   .empty { color: var(--muted); font-size: 14px; margin-top: 12px; }
-  .urdu { direction: rtl; font-family: 'Noto Nastaliq Urdu', serif; }
 
+  /* RTL fixes for Urdu mode. */
+  [dir="rtl"] .nav-link { border-left: none; border-right: 3px solid transparent; }
+  [dir="rtl"] th, [dir="rtl"] td { text-align: right; }
+  [dir="rtl"] td.num, [dir="rtl"] th.num { text-align: left; }
+  body.lang-ur { font-family: 'Jameel Noori Nastaleeq', 'Noto Nastaliq Urdu', 'IBM Plex Sans', sans-serif; }
+
+  /* ---- Mobile: sidebar -> navy topbar, content stacks ---- */
   @media (max-width: 760px) {
-    body { flex-direction: column; }
-    .app-sidebar { width: 100%; height: auto; position: static; flex-direction: row; align-items: center; gap: 16px; padding: 16px; }
-    .app-nav { margin-top: 0; flex-direction: row; flex-wrap: wrap; gap: 4px; }
-    .sidebar-foot { display: none; }
-    .app-main { padding: 20px 16px; }
+    body { background: #F4F6FA; }
+    .sidebar { display: none; }
+    .topbar {
+      display: block; background: var(--navy); color: #fff;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .topbar .row2 { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+    .topbar .logo {
+      width: 38px; height: 38px; border-radius: 10px; background: var(--primary);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .topbar .name { font-size: 15.5px; font-weight: 700; line-height: 1.1; }
+    .topbar .tag { font-size: 10.5px; color: #9DB0D0; }
+    .content { padding: 16px 14px 26px; }
+    .page-head h1 { font-size: 20px; }
+    .panel { padding: 18px; }
   }
+  @media (min-width: 761px) { .mobile-only { display: none !important; } }
 </style>
 </head>
 <body>
-  <aside class="app-sidebar">
-    <div class="brand">AII Smart Paper Maker<small>Result dashboard</small></div>
-    <nav class="app-nav">
-      <a href="#summary">📊 Class summary</a>
-      <a href="#students">🏅 Students &amp; ranking</a>
-      <a href="#questions">❓ Per-question</a>
-      <a href="#bloom">🧠 Bloom breakdown</a>
-      <a href="/">← Generator</a>
+<div class="shell">
+
+  <!-- ============ SIDEBAR (desktop) ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5"></path><path d="M19 8v11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h8z"></path><path d="M9 13h6M9 17h4"></path></svg></div>
+      <div><div class="name">AII Smart Paper Maker</div><div class="tag" data-i18n="brand.sub">Result dashboard</div></div>
+    </div>
+    <div class="lang-toggle">
+      <button data-lang-opt="en" data-active="1" onclick="applyLang('en')">EN</button>
+      <button data-lang-opt="ur" data-active="0" class="urdu" onclick="applyLang('ur')">اردو</button>
+    </div>
+    <div class="nav-label" data-i18n="nav.label">Dashboard</div>
+    <nav>
+      <a class="nav-link" href="#summary"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="20" x2="20" y2="20"></line><rect x="6" y="11" width="3" height="7" fill="currentColor" stroke="none"></rect><rect x="11" y="6" width="3" height="12" fill="currentColor" stroke="none"></rect><rect x="16" y="14" width="3" height="4" fill="currentColor" stroke="none"></rect></svg><span data-i18n="nav.summary">Class summary</span></a>
+      <a class="nav-link" href="#students"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"></circle><path d="M3 20c0-3 3-5 6-5s6 2 6 5"></path><path d="M16 3.5a3 3 0 0 1 0 5.8"></path><path d="M21 20c0-2.4-1.7-4.2-4-4.8"></path></svg><span data-i18n="nav.students">Students &amp; ranking</span></a>
+      <a class="nav-link" href="#questions"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M9.5 9a2.5 2.5 0 0 1 4.5 1.5c0 1.5-2 2-2 3"></path><line x1="12" y1="17" x2="12" y2="17"></line></svg><span data-i18n="nav.questions">Per-question</span></a>
+      <a class="nav-link" href="#bloom"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5-9-5z"></path><path d="M3 13l9 5 9-5"></path></svg><span data-i18n="nav.bloom">Bloom breakdown</span></a>
+      <a class="nav-link back" href="/"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="M12 19l-7-7 7-7"></path></svg><span data-i18n="nav.back">Back to app</span></a>
     </nav>
-    <div class="sidebar-foot">Ek paper ke uploaded<br/>results ka analysis.</div>
+    <div class="sidebar-foot">
+      <div class="box" data-i18n="sidebar.foot">Ek paper ke uploaded results ka analysis.</div>
+    </div>
   </aside>
 
-  <main class="app-main">
-    <div class="page-head">
-      <h1>📊 Result Analyzer Dashboard</h1>
-      <p class="sub">Student results, class ranking aur Bloom-level breakdown — ek paper ke uploaded results se. <a href="/">← Paper maker pe wapas</a></p>
-    </div>
-
-    <section class="panel">
-      <div class="row">
-        <div>
-          <label for="paperId">Paper ID</label>
-          <input id="paperId" placeholder="paper assemble karne ke baad jo ID milti hai" />
-        </div>
-        <div style="flex:0 0 auto">
-          <button onclick="loadLatest()">Dashboard dekhen</button>
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <div class="topbar">
+      <div style="height:env(safe-area-inset-top,0px);"></div>
+      <div class="row2">
+        <div class="logo"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5"></path><path d="M19 8v11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h8z"></path><path d="M9 13h6M9 17h4"></path></svg></div>
+        <div style="flex:1; min-width:0;"><div class="name">Result Dashboard</div><div class="tag"><a href="/" style="color:#9DB0D0" data-i18n="nav.back">Back to app</a></div></div>
+        <div class="lang-toggle" style="margin:0; flex:0 0 auto; width:96px;">
+          <button data-lang-opt="en" data-active="1" onclick="applyLang('en')">EN</button>
+          <button data-lang-opt="ur" data-active="0" class="urdu" onclick="applyLang('ur')">اردو</button>
         </div>
       </div>
+    </div>
 
-      <div id="uploadPicker" class="hidden">
-        <label for="uploadSelect">Kaunsa upload (newest pehle)</label>
-        <select id="uploadSelect" onchange="onUploadChange()"></select>
+    <div class="content">
+      <div class="page-head">
+        <h1 data-i18n="page.title">Result Analyzer Dashboard</h1>
+        <p class="sub" data-i18n="page.sub">Student results, class ranking aur Bloom-level breakdown — ek paper ke uploaded results se.</p>
       </div>
 
-      <div id="status"></div>
-    </section>
+      <section class="panel">
+        <div class="row">
+          <div>
+            <label for="paperId" data-i18n="form.paperId">Paper ID</label>
+            <input id="paperId" placeholder="paper assemble karne ke baad jo ID milti hai" />
+          </div>
+          <div class="narrow">
+            <button class="btn" onclick="loadLatest()" data-i18n="btn.view">Dashboard dekhen</button>
+          </div>
+        </div>
 
-    <div id="dashboard" class="hidden">
-      <section class="panel" id="summary">
-        <h2>Class summary</h2>
-        <div id="cards" class="cards"></div>
+        <div id="uploadPicker" class="hidden">
+          <label for="uploadSelect" data-i18n="form.uploadPick">Kaunsa upload (newest pehle)</label>
+          <select id="uploadSelect" onchange="onUploadChange()"></select>
+        </div>
+
+        <div id="status"></div>
       </section>
 
-      <section class="panel" id="students">
-        <h2>Student results &amp; ranking</h2>
-        <div id="studentsWrap"></div>
-      </section>
+      <div id="dashboard" class="hidden">
+        <section class="panel" id="summary">
+          <h2 data-i18n="sec.summary">Class summary</h2>
+          <div id="cards" class="cards"></div>
+        </section>
 
-      <section class="panel" id="questions">
-        <h2>Per-question difficulty</h2>
-        <p class="sub">Kam average % = class ne is sawaal mein struggle kiya.</p>
-        <div id="questionsWrap"></div>
-      </section>
+        <section class="panel" id="students">
+          <h2 data-i18n="sec.students">Student results &amp; ranking</h2>
+          <div class="table-wrap"><div id="studentsWrap"></div></div>
+        </section>
 
-      <section class="panel" id="bloom">
-        <h2>Bloom's Taxonomy breakdown</h2>
-        <p class="sub">Kaunse cognitive levels kamzor hain — marks-weighted average.</p>
-        <div id="bloomWrap"></div>
-      </section>
+        <section class="panel" id="questions">
+          <h2 data-i18n="sec.questions">Per-question difficulty</h2>
+          <p class="sub" data-i18n="sec.questionsSub">Kam average % = class ne is sawaal mein struggle kiya.</p>
+          <div class="table-wrap"><div id="questionsWrap"></div></div>
+        </section>
+
+        <section class="panel" id="bloom">
+          <h2 data-i18n="sec.bloom">Bloom's Taxonomy breakdown</h2>
+          <p class="sub" data-i18n="sec.bloomSub">Kaunse cognitive levels kamzor hain — marks-weighted average.</p>
+          <div class="table-wrap"><div id="bloomWrap"></div></div>
+        </section>
+      </div>
     </div>
-  </main>
+  </div>
+</div>
 
 <script>
 // Canonical Bloom order (lowest → highest cognitive level) for stable display.
 const BLOOM_ORDER = ["REMEMBER", "UNDERSTAND", "APPLY", "ANALYZE", "EVALUATE", "CREATE"];
 
 let currentPaperId = null;
+let currentLang = 'en';
+let lastDashboardData = null;   // for re-render on language toggle
+
+// ===== i18n (EN / Urdu) — shares the pm_lang key with the main app =====
+const I18N = {
+  en: {
+    'brand.sub': 'Result dashboard',
+    'nav.label': 'Dashboard',
+    'nav.summary': 'Class summary',
+    'nav.students': 'Students & ranking',
+    'nav.questions': 'Per-question',
+    'nav.bloom': 'Bloom breakdown',
+    'nav.back': 'Back to app',
+    'sidebar.foot': 'Ek paper ke uploaded results ka analysis.',
+    'page.title': 'Result Analyzer Dashboard',
+    'page.sub': 'Student results, class ranking aur Bloom-level breakdown — ek paper ke uploaded results se.',
+    'form.paperId': 'Paper ID',
+    'btn.view': 'Dashboard dekhen',
+    'form.uploadPick': 'Kaunsa upload (newest pehle)',
+    'sec.summary': 'Class summary',
+    'sec.students': 'Student results & ranking',
+    'sec.questions': 'Per-question difficulty',
+    'sec.questionsSub': 'Kam average % = class ne is sawaal mein struggle kiya.',
+    'sec.bloom': "Bloom's Taxonomy breakdown",
+    'sec.bloomSub': 'Kaunse cognitive levels kamzor hain — marks-weighted average.',
+    'card.students': 'Students',
+    'card.classAvg': 'Class average',
+    'card.passRate': 'Pass rate',
+    'card.highest': 'Highest',
+    'card.lowest': 'Lowest',
+    'th.rank': 'Rank', 'th.roll': 'Roll no', 'th.name': 'Name', 'th.marks': 'Marks',
+    'th.percent': '%', 'th.result': 'Result',
+    'badge.pass': 'Pass', 'badge.fail': 'Fail',
+    'th.question': 'Question', 'th.bloom': 'Bloom', 'th.avgMarks': 'Avg marks',
+    'th.avgPct': 'Avg %', 'th.pvalue': 'P-value', 'th.dindex': 'D-index', 'th.flag': 'Flag',
+    'th.bloomLevel': 'Bloom level', 'th.questions': 'Questions',
+    'empty.students': 'Is upload mein koi student result nahi.',
+    'empty.questions': 'Koi question data nahi.',
+    'empty.bloom': 'Koi Bloom data nahi.',
+    'questions.legend': '<strong>P-value</strong> (0–1): difficulty — &lt;0.30 bahut mushkil, &gt;0.85 bahut aasaan. <strong>D-index</strong> (−1 to 1): discrimination — ≥0.30 acha, &lt;0.20 kamzor, negative = key check karein. Choti class (&lt;10 students) mein D-index reliable nahi — greyed out.',
+  },
+  ur: {
+    'brand.sub': 'نتائج ڈیش بورڈ',
+    'nav.label': 'ڈیش بورڈ',
+    'nav.summary': 'کلاس خلاصہ',
+    'nav.students': 'طلبہ اور رینکنگ',
+    'nav.questions': 'فی سوال',
+    'nav.bloom': 'بلوم تجزیہ',
+    'nav.back': 'ایپ پر واپس',
+    'sidebar.foot': 'ایک پرچے کے اپ لوڈ شدہ نتائج کا تجزیہ۔',
+    'page.title': 'نتائج تجزیہ ڈیش بورڈ',
+    'page.sub': 'طلبہ کے نتائج، کلاس رینکنگ اور بلوم لیول تجزیہ — ایک پرچے کے اپ لوڈ شدہ نتائج سے۔',
+    'form.paperId': 'پرچہ آئی ڈی',
+    'btn.view': 'ڈیش بورڈ دیکھیں',
+    'form.uploadPick': 'کون سا اپ لوڈ (نیا پہلے)',
+    'sec.summary': 'کلاس خلاصہ',
+    'sec.students': 'طلبہ کے نتائج اور رینکنگ',
+    'sec.questions': 'فی سوال دشواری',
+    'sec.questionsSub': 'کم اوسط % = کلاس نے اس سوال میں مشکل محسوس کی۔',
+    'sec.bloom': 'بلوم ٹیکسانومی تجزیہ',
+    'sec.bloomSub': 'کون سے کوگنیٹو لیولز کمزور ہیں — نمبروں کے لحاظ سے اوسط۔',
+    'card.students': 'طلبہ',
+    'card.classAvg': 'کلاس اوسط',
+    'card.passRate': 'پاس شرح',
+    'card.highest': 'سب سے زیادہ',
+    'card.lowest': 'سب سے کم',
+    'th.rank': 'رینک', 'th.roll': 'رول نمبر', 'th.name': 'نام', 'th.marks': 'نمبر',
+    'th.percent': '%', 'th.result': 'نتیجہ',
+    'badge.pass': 'پاس', 'badge.fail': 'فیل',
+    'th.question': 'سوال', 'th.bloom': 'بلوم', 'th.avgMarks': 'اوسط نمبر',
+    'th.avgPct': 'اوسط %', 'th.pvalue': 'P-ویلیو', 'th.dindex': 'D-انڈیکس', 'th.flag': 'فلیگ',
+    'th.bloomLevel': 'بلوم لیول', 'th.questions': 'سوالات',
+    'empty.students': 'اس اپ لوڈ میں کوئی طالبِ علم نتیجہ نہیں۔',
+    'empty.questions': 'کوئی سوال ڈیٹا نہیں۔',
+    'empty.bloom': 'کوئی بلوم ڈیٹا نہیں۔',
+    'questions.legend': '<strong>P-ویلیو</strong> (0–1): دشواری — &lt;0.30 بہت مشکل، &gt;0.85 بہت آسان۔ <strong>D-انڈیکس</strong> (−1 تا 1): امتیاز — ≥0.30 اچھا، &lt;0.20 کمزور، منفی = جوابی کلید چیک کریں۔ چھوٹی کلاس (&lt;10 طلبہ) میں D-انڈیکس قابلِ اعتماد نہیں — دھندلا۔',
+  },
+};
+
+function t(key) {
+  const d = I18N[currentLang] || I18N.en;
+  return d[key] != null ? d[key] : key;
+}
+
+function applyLang(lang) {
+  const dict = I18N[lang] || I18N.en;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = dict[el.dataset.i18n];
+    if (v != null) el.textContent = v;
+  });
+  const rtl = lang === 'ur';
+  document.documentElement.lang = lang;
+  document.documentElement.dir = rtl ? 'rtl' : 'ltr';
+  document.body.classList.toggle('lang-ur', rtl);
+  document.querySelectorAll('[data-lang-opt]').forEach(b => {
+    b.dataset.active = (b.dataset.langOpt === lang) ? '1' : '0';
+  });
+  currentLang = lang;
+  try { localStorage.setItem('pm_lang', lang); } catch (e) { /* private mode */ }
+  // Re-render dynamic tables so their headers/labels follow the language.
+  if (lastDashboardData) render(lastDashboardData);
+}
+
+function initLang() {
+  let saved = 'en';
+  try { saved = localStorage.getItem('pm_lang') || 'en'; } catch (e) { /* ignore */ }
+  applyLang(saved === 'ur' ? 'ur' : 'en');
+}
 
 function setStatus(msg, kind) {
   const el = document.getElementById("status");
@@ -302,6 +474,7 @@ async function onUploadChange() {
 }
 
 function render(data) {
+  lastDashboardData = data;
   renderCards(data.summary);
   renderStudents(data.students);
   renderQuestions(data.questions);
@@ -311,11 +484,11 @@ function render(data) {
 
 function renderCards(s) {
   const cards = [
-    { value: s.student_count, caption: "Students" },
-    { value: pct(s.class_average_percent), caption: `Class average (${s.class_average_marks}/${s.total_marks})` },
-    { value: pct(s.pass_percent), caption: `Pass rate (${s.pass_count} pass, ≥${s.pass_threshold_percent}%)` },
-    { value: pct(s.highest_percent), caption: "Highest" },
-    { value: pct(s.lowest_percent), caption: "Lowest" },
+    { value: s.student_count, caption: t('card.students') },
+    { value: pct(s.class_average_percent), caption: `${t('card.classAvg')} (${s.class_average_marks}/${s.total_marks})` },
+    { value: pct(s.pass_percent), caption: `${t('card.passRate')} (≥${s.pass_threshold_percent}%)` },
+    { value: pct(s.highest_percent), caption: t('card.highest') },
+    { value: pct(s.lowest_percent), caption: t('card.lowest') },
   ];
   document.getElementById("cards").innerHTML = cards.map(c => `
     <div class="card">
@@ -326,7 +499,7 @@ function renderCards(s) {
 
 function renderStudents(students) {
   const wrap = document.getElementById("studentsWrap");
-  if (!students.length) { wrap.innerHTML = `<p class="empty">Is upload mein koi student result nahi.</p>`; return; }
+  if (!students.length) { wrap.innerHTML = `<p class="empty">${t('empty.students')}</p>`; return; }
   const rows = students.map(st => {
     const passed = st.percent >= 33;
     return `
@@ -336,19 +509,19 @@ function renderStudents(students) {
         <td>${escapeHtml(st.student_name || "—")}</td>
         <td class="num">${st.marks_obtained}/${st.total_marks}</td>
         <td class="num">${pct(st.percent)}</td>
-        <td><span class="badge ${passed ? "pass" : "fail"}">${passed ? "Pass" : "Fail"}</span></td>
+        <td><span class="badge ${passed ? "pass" : "fail"}">${passed ? t('badge.pass') : t('badge.fail')}</span></td>
       </tr>`;
   }).join("");
   wrap.innerHTML = `
     <table>
-      <thead><tr><th>Rank</th><th>Roll no</th><th>Name</th><th class="num">Marks</th><th class="num">%</th><th>Result</th></tr></thead>
+      <thead><tr><th>${t('th.rank')}</th><th>${t('th.roll')}</th><th>${t('th.name')}</th><th class="num">${t('th.marks')}</th><th class="num">${t('th.percent')}</th><th>${t('th.result')}</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
 }
 
 function renderQuestions(questions) {
   const wrap = document.getElementById("questionsWrap");
-  if (!questions.length) { wrap.innerHTML = `<p class="empty">Koi question data nahi.</p>`; return; }
+  if (!questions.length) { wrap.innerHTML = `<p class="empty">${t('empty.questions')}</p>`; return; }
   const rows = questions.map(q => `
     <tr${q.flag ? ' class="flagged"' : ''}>
       <td>${q.flag ? "⚠️ " : ""}Q${q.question_index}</td>
@@ -362,16 +535,12 @@ function renderQuestions(questions) {
   wrap.innerHTML = `
     <table>
       <thead><tr>
-        <th>Question</th><th>Bloom</th><th class="num">Avg marks</th><th>Avg %</th>
-        <th class="num">P-value</th><th class="num">D-index</th><th>Flag</th>
+        <th>${t('th.question')}</th><th>${t('th.bloom')}</th><th class="num">${t('th.avgMarks')}</th><th>${t('th.avgPct')}</th>
+        <th class="num">${t('th.pvalue')}</th><th class="num">${t('th.dindex')}</th><th>${t('th.flag')}</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <p class="sub" style="margin-top:8px">
-      <strong>P-value</strong> (0–1): difficulty — &lt;0.30 bahut mushkil, &gt;0.85 bahut aasaan.
-      <strong>D-index</strong> (−1 to 1): discrimination — ≥0.30 acha, &lt;0.20 kamzor, negative = key check karein.
-      Choti class (&lt;10 students) mein D-index reliable nahi — greyed out.
-    </p>`;
+    <p class="sub" style="margin-top:8px">${t('questions.legend')}</p>`;
 }
 
 // P-value cell, coloured by band.
@@ -392,7 +561,7 @@ function dCell(q) {
 
 function renderBlooms(blooms) {
   const wrap = document.getElementById("bloomWrap");
-  if (!blooms.length) { wrap.innerHTML = `<p class="empty">Koi Bloom data nahi.</p>`; return; }
+  if (!blooms.length) { wrap.innerHTML = `<p class="empty">${t('empty.bloom')}</p>`; return; }
   // Sort into canonical cognitive order; unknown levels fall to the end.
   const sorted = [...blooms].sort((a, b) => bloomRank(a.bloom_level) - bloomRank(b.bloom_level));
   const rows = sorted.map(b => `
@@ -404,7 +573,7 @@ function renderBlooms(blooms) {
     </tr>`).join("");
   wrap.innerHTML = `
     <table>
-      <thead><tr><th>Bloom level</th><th class="num">Questions</th><th class="num">Avg marks</th><th>Avg %</th></tr></thead>
+      <thead><tr><th>${t('th.bloomLevel')}</th><th class="num">${t('th.questions')}</th><th class="num">${t('th.avgMarks')}</th><th>${t('th.avgPct')}</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
 }
@@ -437,8 +606,8 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
-// Pre-fill from ?paper_id=... so the paper maker can deep-link here, and
-// auto-load if present.
+// Apply saved language, then pre-fill from ?paper_id=... and auto-load.
+initLang();
 (function init() {
   const params = new URLSearchParams(window.location.search);
   const paperId = params.get("paper_id");
