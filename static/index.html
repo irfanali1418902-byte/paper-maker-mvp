@@ -93,6 +93,8 @@
   .sub { margin: 5px 0 0; font-size: 14px; color: var(--muted); }
 
   .twocol { display: grid; grid-template-columns: 1fr 360px; gap: 22px; align-items: start; }
+  /* Generate screen: form (left) + live serif preview (right, wider). */
+  .twocol-gen { display: grid; grid-template-columns: 380px 1fr; gap: 22px; align-items: start; }
   .stack { display: flex; flex-direction: column; gap: 18px; }
 
   /* ---- Cards (Direction B — rounded) ---- */
@@ -263,7 +265,7 @@
   [dir="rtl"] .paper-sheet { direction: ltr; }
 
   /* ---- Responsive: sidebar -> bottom tab bar (Direction A on mobile) ---- */
-  @media (max-width: 1024px) { .twocol { grid-template-columns: 1fr; } }
+  @media (max-width: 1024px) { .twocol, .twocol-gen { grid-template-columns: 1fr; } }
   @media (max-width: 760px) {
     body { background: #F4F6FA; }
     .sidebar { display: none; }
@@ -352,7 +354,9 @@
         </div>
         <p class="sub mobile-only" style="margin:2px 0 16px" data-i18n="gen.sub">AI se bilingual, Bloom-tagged questions banayein, phir balanced paper assemble karein.</p>
 
-        <div class="twocol">
+        <div class="twocol-gen">
+          <!-- LEFT column: form + summary + tip -->
+          <div class="stack">
           <div class="card">
             <label data-i18n="form.classGrade">Class/Grade select karen</label>
             <select id="syllabusGrade" onchange="onGradeChange()">
@@ -403,7 +407,6 @@
             </div>
           </div>
 
-          <div class="stack">
             <div class="card" style="padding:18px;">
               <div class="card-title" data-i18n="card.thisPaper">This paper</div>
               <div class="summary-row"><span data-i18n="sum.subject">Subject</span><b id="sumSubject">Mathematics</b></div>
@@ -414,6 +417,17 @@
             <div class="tip">
               <div class="k" data-i18n="tip.label">Tip</div>
               <div class="v" data-i18n-html="tip.generate">Pehle <b>Syllabus upload</b> karein to topic dropdown khud bhar jayega.</div>
+            </div>
+          </div><!-- /left column -->
+
+          <!-- RIGHT column: live bilingual serif paper preview (Direction C) -->
+          <div>
+            <div id="genStatus" class="js-status" style="font-size:14px; color:var(--muted); min-height:20px; margin-bottom:10px;"></div>
+            <div id="paperPreviewGen" class="paper-sheet js-paper-preview">
+              <div class="paper-empty" data-i18n="preview.empty">Abhi koi paper nahi bana. "Generate paper" screen par ja kar paper build karein — yahan live preview aa jayegi.</div>
+            </div>
+            <div class="actions" style="margin-top:14px">
+              <button class="ghost-btn" id="genExportBtn" style="display:none" onclick="showScreen('results')" data-i18n="btn.toExport">Export &amp; results →</button>
             </div>
           </div>
         </div>
@@ -482,12 +496,12 @@
           <div><h1 class="h1" data-i18n="results.title">Results &amp; preview</h1><p class="sub" data-i18n="results.sub">Final review se pehle live paper dekh lein, phir export ya dashboard kholein.</p></div>
           <div class="desktop-only"><button class="ghost-btn" onclick="showScreen('generate')" data-i18n="btn.backGenerate">← Back to generate</button></div>
         </div>
-        <div id="status"></div>
+        <div id="status" class="js-status"></div>
 
         <div class="twocol" style="margin-top:14px">
           <div>
             <!-- Direction C: live bilingual serif paper sheet -->
-            <div id="paperPreview" class="paper-sheet">
+            <div id="paperPreview" class="paper-sheet js-paper-preview">
               <div class="paper-empty" data-i18n="preview.empty">Abhi koi paper nahi bana. "Generate paper" screen par ja kar paper build karein — yahan live preview aa jayegi.</div>
             </div>
 
@@ -645,6 +659,7 @@ const I18N = {
     'opt.balanced': 'Balanced', 'opt.foundational': 'Foundational', 'opt.advanced': 'Advanced',
     'btn.genQuestions': '1. Generate questions (AI)',
     'btn.buildPaper': '2. Build paper from bank',
+    'btn.toExport': 'Export & results →',
     'card.thisPaper': 'This paper',
     'sum.subject': 'Subject', 'sum.topic': 'Topic', 'sum.questions': 'Questions',
     'sum.language': 'Language', 'sum.langValue': 'Urdu + English',
@@ -721,6 +736,7 @@ const I18N = {
     'opt.balanced': 'متوازن', 'opt.foundational': 'بنیادی', 'opt.advanced': 'اعلیٰ',
     'btn.genQuestions': '۱۔ سوالات بنائیں (اے آئی)',
     'btn.buildPaper': '۲۔ بینک سے پرچہ بنائیں',
+    'btn.toExport': 'ایکسپورٹ اور نتائج ←',
     'card.thisPaper': 'یہ پرچہ',
     'sum.subject': 'مضمون', 'sum.topic': 'ٹاپک', 'sum.questions': 'سوالات',
     'sum.language': 'زبان', 'sum.langValue': 'اردو + انگریزی',
@@ -1034,7 +1050,6 @@ async function uploadSyllabusZip() {
 
 async function generateQuestions() {
   setStatus("AI se questions generate ho rahe hain... (kuch seconds lagenge)");
-  showScreen('results');
   const body = {
     subject: val('subject'),
     topic: val('topic'),
@@ -1060,7 +1075,6 @@ async function generateQuestions() {
 
 async function buildPaper() {
   setStatus("Paper assemble ho raha hai...");
-  showScreen('results');
   const body = {
     subject: val('subject'),
     total_questions: parseInt(val('totalQuestions')),
@@ -1080,6 +1094,7 @@ async function buildPaper() {
     document.getElementById('dashboardBtn').style.display = 'inline-flex';
     document.getElementById('csvDownloadBtn').style.display = 'inline-flex';
     document.getElementById('csvUploadBtn').style.display = 'inline-flex';
+    document.getElementById('genExportBtn').style.display = 'inline-flex';
     setStatus(`Paper ban gaya — Total marks: ${data.total_marks}`);
     document.getElementById('adaptiveSummary').innerHTML = '';
     renderBalanceSummary(data.balance_summary);
@@ -1174,10 +1189,11 @@ function renderQuestions(questions) {
 // Direction C — live bilingual paper sheet with serif heading. Reuses the
 // already-fetched paper data; no extra API call.
 function renderPaperPreview(data) {
-  const el = document.getElementById('paperPreview');
+  // Render into every live-preview slot (Generate screen + Results screen).
+  const els = document.querySelectorAll('.js-paper-preview');
   const questions = data.questions || [];
   if (!questions.length) {
-    el.innerHTML = '<div class="paper-empty">Is paper mein koi question nahi mila.</div>';
+    els.forEach(el => { el.innerHTML = '<div class="paper-empty">Is paper mein koi question nahi mila.</div>'; });
     return;
   }
   const nameEn = (val('schoolNameEn') || 'School Name').trim();
@@ -1199,7 +1215,7 @@ function renderPaperPreview(data) {
     </div>`;
   }).join('');
 
-  el.innerHTML = `
+  const html = `
     <div class="ph-head">
       <div class="ph-en">${nameEn}</div>
       ${nameUr ? `<div class="ph-ur">${nameUr}</div>` : ''}
@@ -1211,6 +1227,7 @@ function renderPaperPreview(data) {
     </div>
     <div class="ph-sec">Questions</div>
     ${qHtml}`;
+  els.forEach(el => { el.innerHTML = html; });
 }
 
 // Bloom-derived expected difficulty, with a warning when it disagrees with
@@ -1488,7 +1505,7 @@ function escapeHtml(s) {
 }
 
 function val(id) { return document.getElementById(id).value; }
-function setStatus(msg) { document.getElementById('status').textContent = msg; }
+function setStatus(msg) { document.querySelectorAll('.js-status').forEach(el => { el.textContent = msg; }); }
 
 // Apply saved language (or default EN) on load.
 initLang();
