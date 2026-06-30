@@ -176,6 +176,15 @@ class PaperResponse(BaseModel):
     balance_summary: PaperBalanceSummary
 
 
+class QuickStatsResponse(BaseModel):
+    """Home-screen quick stats. top_subject is None when no papers exist yet."""
+
+    total_papers: int
+    uploads_this_month: int
+    top_subject: Optional[str] = None
+    total_questions: int
+
+
 class StatusResponse(BaseModel):
     """Generic acknowledgement for write endpoints jo koi domain object
     return nahi karte (e.g. POST /api/school-settings)."""

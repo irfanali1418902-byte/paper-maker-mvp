@@ -73,6 +73,14 @@ def find_by_id(question_id: str) -> Optional[dict]:
     return dict(row) if row else None
 
 
+def count_all() -> int:
+    conn = get_connection()
+    cur = conn.cursor()
+    n = cur.execute("SELECT COUNT(*) FROM questions").fetchone()[0]
+    conn.close()
+    return n
+
+
 def list_by_filters(
     subject: Optional[str] = None,
     topic: Optional[str] = None,

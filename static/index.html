@@ -232,6 +232,13 @@
   .flag-reason { font-size: 12px; color: var(--err-tx); }
   .an-empty { color: var(--muted); font-size: 14px; padding: 10px 0; }
 
+  /* Quick-stats empty state (new user, no data yet) */
+  .qs-empty {
+    border: 1px dashed #C6CFDD; background: #FBFCFE; border-radius: 14px;
+    padding: 18px 20px; color: var(--muted); font-size: 14px; line-height: 1.6;
+  }
+  .qs-empty b { color: var(--ink); }
+
   /* ---- Urdu / RTL ---- */
   /* Jameel Noori Nastaleeq is NOT bundled — used only if installed on the
      machine (same assumption the Word export makes); else Noto Nastaliq Urdu. */
@@ -380,6 +387,9 @@
 
       <!-- ===== GENERATE ===== -->
       <section class="screen" data-screen="generate" data-active="1">
+        <!-- Quick stats (home overview) -->
+        <div id="quickStats" class="an-cards" style="margin-bottom:20px"></div>
+
         <div class="head">
           <div><h1 class="h1" data-i18n="gen.title">Generate paper</h1><p class="sub desktop-only" data-i18n="gen.sub">AI se bilingual, Bloom-tagged questions banayein, phir balanced paper assemble karein.</p></div>
         </div>
@@ -678,6 +688,7 @@ let selectedSyllabusTopicId = null;
 let currentLang = 'en';
 let currentPaperData = null;   // last built/updated paper, for manual replace
 let replacingQid = null;       // which question the open modal is replacing
+let quickStatsData = null;     // home-screen quick stats
 
 // Translate a key in the active language (for JS-rendered dynamic content).
 function t(key) {
@@ -719,6 +730,11 @@ const I18N = {
     'modal.title': 'Replace question',
     'modal.loading': 'Loading questions from bank…',
     'modal.noCandidates': 'Is topic / Bloom level ke liye bank mein koi aur question nahi mila.',
+    'qs.papers': 'Total papers',
+    'qs.uploads': 'Is mahine results upload',
+    'qs.topSubject': 'Top subject',
+    'qs.questions': 'Question bank mein',
+    'qs.empty': 'Abhi tak koi paper nahi banaya — shuru karne ke liye <b>“Generate paper”</b> par click karein.',
     'card.thisPaper': 'This paper',
     'sum.subject': 'Subject', 'sum.topic': 'Topic', 'sum.questions': 'Questions',
     'sum.language': 'Language', 'sum.langValue': 'Urdu + English',
@@ -802,6 +818,11 @@ const I18N = {
     'modal.title': 'سوال بدلیں',
     'modal.loading': 'بینک سے سوالات لوڈ ہو رہے ہیں…',
     'modal.noCandidates': 'اس ٹاپک / بلوم لیول کے لیے بینک میں کوئی اور سوال نہیں ملا۔',
+    'qs.papers': 'کل پرچے',
+    'qs.uploads': 'اس ماہ نتائج اپ لوڈ',
+    'qs.topSubject': 'سرفہرست مضمون',
+    'qs.questions': 'سوال بینک میں',
+    'qs.empty': 'ابھی تک کوئی پرچہ نہیں بنایا — شروع کرنے کے لیے <b>”پرچہ بنائیں“</b> پر کلک کریں۔',
     'card.thisPaper': 'یہ پرچہ',
     'sum.subject': 'مضمون', 'sum.topic': 'ٹاپک', 'sum.questions': 'سوالات',
     'sum.language': 'زبان', 'sum.langValue': 'اردو + انگریزی',
@@ -878,6 +899,8 @@ function applyLang(lang) {
   try { localStorage.setItem('pm_lang', lang); } catch (e) { /* private mode — ignore */ }
   // Re-render the live preview so its dynamic "Change" buttons follow the language.
   if (currentPaperData) renderPaperPreview(currentPaperData);
+  // Re-render quick stats so their captions follow the language.
+  if (quickStatsData) renderQuickStats(quickStatsData);
 }
 
 function initLang() {
@@ -1135,6 +1158,7 @@ async function generateQuestions() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || 'Error');
     setStatus(`${data.saved_count} questions question bank mein save ho gaye. Ab "Build paper" dabayen.`);
+    loadQuickStats();
   } catch (e) {
     setStatus('Error: ' + e.message);
   }
@@ -1165,6 +1189,7 @@ async function buildPaper() {
     setStatus(`Paper ban gaya — Total marks: ${data.total_marks}`);
     document.getElementById('adaptiveSummary').innerHTML = '';
     currentPaperData = data;
+    loadQuickStats();
     renderBalanceSummary(data.balance_summary);
     renderQuestions(data.questions);
     renderPaperPreview(data);
@@ -1199,6 +1224,7 @@ async function buildAdaptivePaper() {
     setStatus(`Adaptive paper ban gaya — Total marks: ${data.total_marks}`);
     currentPaperData = data;
     renderAdaptiveSummary(data.adaptive_summary);
+    loadQuickStats();
     renderBalanceSummary(data.balance_summary);
     renderQuestions(data.questions);
     renderPaperPreview(data);
@@ -1643,11 +1669,45 @@ function closeReplaceModal() {
   replacingQid = null;
 }
 
+// ===== Home quick stats =====
+async function loadQuickStats() {
+  try {
+    const res = await fetch('/api/stats');
+    if (!res.ok) return;        // stats are non-critical — fail quietly
+    quickStatsData = await res.json();
+    renderQuickStats(quickStatsData);
+  } catch (e) {
+    /* offline / network — leave stats area empty */
+  }
+}
+
+function renderQuickStats(s) {
+  const el = document.getElementById('quickStats');
+  if (!el) return;
+  // New user with nothing yet → friendly empty state.
+  if (!s || ((s.total_papers || 0) === 0 && (s.total_questions || 0) === 0)) {
+    el.classList.remove('an-cards');
+    el.innerHTML = `<div class="qs-empty" data-i18n-html="qs.empty">${t('qs.empty')}</div>`;
+    return;
+  }
+  el.classList.add('an-cards');
+  const cards = [
+    { v: s.total_papers, c: t('qs.papers') },
+    { v: s.uploads_this_month, c: t('qs.uploads') },
+    { v: s.top_subject || '—', c: t('qs.topSubject') },
+    { v: s.total_questions, c: t('qs.questions') },
+  ];
+  el.innerHTML = cards.map(c =>
+    `<div class="an-card"><div class="v">${escapeHtml(String(c.v))}</div><div class="c">${escapeHtml(c.c)}</div></div>`
+  ).join('');
+}
+
 function val(id) { return document.getElementById(id).value; }
 function setStatus(msg) { document.querySelectorAll('.js-status').forEach(el => { el.textContent = msg; }); }
 
 // Apply saved language (or default EN) on load.
 initLang();
+loadQuickStats();
 </script>
 </body>
 </html>

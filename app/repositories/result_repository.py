@@ -31,6 +31,19 @@ def find_upload_by_id(upload_id: str) -> Optional[dict]:
     return dict(row) if row else None
 
 
+def count_uploads_since(start_iso: str) -> int:
+    """Kitne result uploads `start_iso` (YYYY-MM-DD HH:MM:SS) ke baad hue —
+    home screen ke 'is mahine' stat ke liye. uploaded_at strings lexicographic
+    compare hoti hain (same format), to yeh theek kaam karta hai."""
+    conn = get_connection()
+    cur = conn.cursor()
+    n = cur.execute(
+        "SELECT COUNT(*) FROM result_uploads WHERE uploaded_at >= ?", (start_iso,)
+    ).fetchone()[0]
+    conn.close()
+    return n
+
+
 def list_uploads_for_paper(paper_id: str) -> list:
     """Most recent uploads first — analyzer dashboards typically want
     the latest upload for a given paper at the top."""
