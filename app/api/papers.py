@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, File, HTTPException, Response, UploadFile
 
-from app.models.requests import AdaptivePaperRequest, GeneratePaperRequest
+from app.models.requests import AdaptivePaperRequest, GeneratePaperRequest, ReplaceQuestionRequest
 from app.models.responses import AdaptivePaperResponse, GeneratePaperResponse, PaperResponse
 from app.services import paper_service, result_service
 from app.services.exceptions import ResultsValidationError
@@ -47,6 +47,24 @@ def generate_adaptive_paper(req: AdaptivePaperRequest):
                 "ya in Bloom-levels ke liye question bank khali hai."
             ),
         )
+    return result
+
+
+@router.post("/api/paper/{paper_id}/replace-question", response_model=GeneratePaperResponse)
+def replace_question(paper_id: str, req: ReplaceQuestionRequest):
+    """Manual question selection: ek question ko bank ke doosre se replace
+    karta hai, total_marks + balance recompute karke persist karta hai."""
+    try:
+        result = paper_service.replace_question(paper_id, req.old_question_id, req.new_question_id)
+    except ValueError as e:
+        # Bad question ids (old not in paper / new not in bank) — client error.
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Question replace fail hui (DB error): {e}"
+        ) from e
+    if result is None:
+        raise HTTPException(status_code=404, detail="Paper nahi mila.")
     return result
 
 

@@ -79,6 +79,42 @@ def get_paper_with_questions(paper_id: str) -> dict | None:
     }
 
 
+def replace_question(paper_id: str, old_question_id: str, new_question_id: str) -> dict | None:
+    """Swap one question in a paper for another from the bank, in place (order
+    preserved), recompute total_marks, and persist. Returns the updated paper
+    dict (same shape as assemble_balanced_paper), or None if the paper doesn't
+    exist (route maps to 404). Raises ValueError for bad question ids (400)."""
+    paper = papers_repository.find_by_id(paper_id)
+    if paper is None:
+        return None
+
+    question_ids = json.loads(paper["question_ids"])
+    if old_question_id not in question_ids:
+        raise ValueError("Purana question is paper mein nahi hai.")
+    if questions_repository.find_by_id(new_question_id) is None:
+        raise ValueError("Naya question bank mein nahi mila.")
+
+    question_ids[question_ids.index(old_question_id)] = new_question_id
+
+    questions: list[dict] = []
+    for qid in question_ids:
+        q = questions_repository.find_by_id(qid)
+        if q:
+            questions.append(q)
+    _annotate_expected_difficulty(questions)
+    total_marks = sum(q["marks"] for q in questions)
+
+    papers_repository.update_question_ids(paper_id, question_ids, total_marks)
+    questions_repository.increment_usage_count(new_question_id)
+
+    return {
+        "paper_id": paper_id,
+        "total_marks": total_marks,
+        "questions": questions,
+        "balance_summary": item_analysis_service.summarize_paper_balance(questions),
+    }
+
+
 def _pick_questions(
     subject: str, distribution: dict, difficulty: str | None
 ) -> tuple[list[str], list[dict]]:

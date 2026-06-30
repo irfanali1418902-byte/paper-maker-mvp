@@ -34,6 +34,14 @@ class AdaptivePaperRequest(BaseModel):
     difficulty: Optional[str] = None
 
 
+class ReplaceQuestionRequest(BaseModel):
+    """Manual question swap in a built paper — replace old_question_id with
+    new_question_id (both must already exist in the bank/paper)."""
+
+    old_question_id: str
+    new_question_id: str
+
+
 class SchoolSettings(BaseModel):
     """Used for both the POST body and the GET response (singleton id=1)."""
 

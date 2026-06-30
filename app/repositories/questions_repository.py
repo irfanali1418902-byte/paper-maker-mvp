@@ -73,7 +73,11 @@ def find_by_id(question_id: str) -> Optional[dict]:
     return dict(row) if row else None
 
 
-def list_by_filters(subject: Optional[str] = None, topic: Optional[str] = None) -> list:
+def list_by_filters(
+    subject: Optional[str] = None,
+    topic: Optional[str] = None,
+    bloom_level: Optional[str] = None,
+) -> list:
     conn = get_connection()
     cur = conn.cursor()
     query = "SELECT * FROM questions WHERE 1=1"
@@ -84,6 +88,9 @@ def list_by_filters(subject: Optional[str] = None, topic: Optional[str] = None) 
     if topic:
         query += " AND topic = ?"
         params.append(topic)
+    if bloom_level:
+        query += " AND bloom_level = ?"
+        params.append(bloom_level)
     rows = cur.execute(query, params).fetchall()
     conn.close()
     return [dict(row) for row in rows]

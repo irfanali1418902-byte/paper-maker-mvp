@@ -264,6 +264,37 @@
   /* The exam-paper preview is a fixed document — keep it LTR even in Urdu UI. */
   [dir="rtl"] .paper-sheet { direction: ltr; }
 
+  /* ---- Manual question selection: per-question "Change" + replace modal ---- */
+  .paper-sheet .ph-change {
+    margin-top: 7px; background: none; border: 1px dashed #C6CFDD; color: var(--primary);
+    font-size: 11.5px; font-weight: 600; font-family: inherit; border-radius: 6px;
+    padding: 3px 10px; min-height: 0; cursor: pointer;
+  }
+  .paper-sheet .ph-change:hover { background: var(--tint); }
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(22,33,58,.5); z-index: 100;
+    display: none; align-items: center; justify-content: center; padding: 16px;
+  }
+  .modal-overlay[data-open="1"] { display: flex; }
+  .modal {
+    background: #fff; border-radius: 16px; width: 100%; max-width: 640px;
+    max-height: 86vh; display: flex; flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  }
+  .modal-head { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .modal-title { font-size: 17px; font-weight: 700; }
+  .modal-sub { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+  .modal-close { background: none; border: none; color: var(--muted); font-size: 24px; line-height: 1; cursor: pointer; min-height: 0; padding: 0 4px; }
+  .modal-close:hover { background: none; color: var(--ink); }
+  .modal-body { padding: 14px 20px 20px; overflow-y: auto; }
+  .cand { border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+  .cand:hover { border-color: var(--primary); }
+  .cand .c-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .cand .c-en { font-weight: 500; font-size: 14px; }
+  .cand .c-ur { font-size: 15px; color: var(--muted); text-align: right; margin-top: 4px; }
+  .cand .c-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 11px; }
+  @media (max-width: 760px) { .modal { max-height: 92vh; } }
+
   /* ---- Responsive: sidebar -> bottom tab bar (Direction A on mobile) ---- */
   @media (max-width: 1024px) { .twocol, .twocol-gen { grid-template-columns: 1fr; } }
   @media (max-width: 760px) {
@@ -626,11 +657,33 @@
   </div>
 </div>
 
+<!-- ===== Replace-question modal (manual question selection) ===== -->
+<div class="modal-overlay" id="replaceModal" data-open="0" onclick="if(event.target===this)closeReplaceModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" data-i18n="modal.title">Replace question</div>
+        <div class="modal-sub" id="replaceSub"></div>
+      </div>
+      <button class="modal-close" onclick="closeReplaceModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body"><div id="replaceCandidates"></div></div>
+  </div>
+</div>
+
 <script>
 let logoBase64 = null;
 let currentPaperId = null;
 let selectedSyllabusTopicId = null;
 let currentLang = 'en';
+let currentPaperData = null;   // last built/updated paper, for manual replace
+let replacingQid = null;       // which question the open modal is replacing
+
+// Translate a key in the active language (for JS-rendered dynamic content).
+function t(key) {
+  const d = (typeof I18N !== 'undefined' && I18N[currentLang]) ? I18N[currentLang] : (typeof I18N !== 'undefined' ? I18N.en : {});
+  return d[key] != null ? d[key] : key;
+}
 
 // ===== i18n (EN / Urdu) =====
 // `en` values are the app's existing strings verbatim; `ur` are translations.
@@ -660,6 +713,12 @@ const I18N = {
     'btn.genQuestions': '1. Generate questions (AI)',
     'btn.buildPaper': '2. Build paper from bank',
     'btn.toExport': 'Export & results →',
+    'btn.change': 'Change',
+    'btn.select': 'Select',
+    'label.marks': 'marks',
+    'modal.title': 'Replace question',
+    'modal.loading': 'Loading questions from bank…',
+    'modal.noCandidates': 'Is topic / Bloom level ke liye bank mein koi aur question nahi mila.',
     'card.thisPaper': 'This paper',
     'sum.subject': 'Subject', 'sum.topic': 'Topic', 'sum.questions': 'Questions',
     'sum.language': 'Language', 'sum.langValue': 'Urdu + English',
@@ -737,6 +796,12 @@ const I18N = {
     'btn.genQuestions': '۱۔ سوالات بنائیں (اے آئی)',
     'btn.buildPaper': '۲۔ بینک سے پرچہ بنائیں',
     'btn.toExport': 'ایکسپورٹ اور نتائج ←',
+    'btn.change': 'بدلیں',
+    'btn.select': 'منتخب کریں',
+    'label.marks': 'نمبر',
+    'modal.title': 'سوال بدلیں',
+    'modal.loading': 'بینک سے سوالات لوڈ ہو رہے ہیں…',
+    'modal.noCandidates': 'اس ٹاپک / بلوم لیول کے لیے بینک میں کوئی اور سوال نہیں ملا۔',
     'card.thisPaper': 'یہ پرچہ',
     'sum.subject': 'مضمون', 'sum.topic': 'ٹاپک', 'sum.questions': 'سوالات',
     'sum.language': 'زبان', 'sum.langValue': 'اردو + انگریزی',
@@ -811,6 +876,8 @@ function applyLang(lang) {
   });
   currentLang = lang;
   try { localStorage.setItem('pm_lang', lang); } catch (e) { /* private mode — ignore */ }
+  // Re-render the live preview so its dynamic "Change" buttons follow the language.
+  if (currentPaperData) renderPaperPreview(currentPaperData);
 }
 
 function initLang() {
@@ -1097,6 +1164,7 @@ async function buildPaper() {
     document.getElementById('genExportBtn').style.display = 'inline-flex';
     setStatus(`Paper ban gaya — Total marks: ${data.total_marks}`);
     document.getElementById('adaptiveSummary').innerHTML = '';
+    currentPaperData = data;
     renderBalanceSummary(data.balance_summary);
     renderQuestions(data.questions);
     renderPaperPreview(data);
@@ -1129,6 +1197,7 @@ async function buildAdaptivePaper() {
     document.getElementById('csvDownloadBtn').style.display = 'inline-flex';
     document.getElementById('csvUploadBtn').style.display = 'inline-flex';
     setStatus(`Adaptive paper ban gaya — Total marks: ${data.total_marks}`);
+    currentPaperData = data;
     renderAdaptiveSummary(data.adaptive_summary);
     renderBalanceSummary(data.balance_summary);
     renderQuestions(data.questions);
@@ -1208,10 +1277,12 @@ function renderPaperPreview(data) {
       ? `<div class="ph-opts">${optsEn.map((o, idx) => `<span>${letters[idx] || ''} ${o}</span>`).join('')}</div>`
       : '';
     const ur = q.question_ur ? `<div class="q-ur">${q.question_ur}</div>` : '';
+    const change = q.id ? `<button class="ph-change" onclick="openReplaceModal('${q.id}')">&#8635; ${t('btn.change')}</button>` : '';
     return `<div class="ph-q">
       <div class="q-en">Q${i + 1}. ${q.question_en || ''} <span style="float:right;color:#5B6678;font-weight:400">[${q.marks} mark${q.marks == 1 ? '' : 's'}]</span></div>
       ${ur}
       ${opts}
+      ${change}
     </div>`;
   }).join('');
 
@@ -1502,6 +1573,74 @@ async function anReadError(res) {
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// ===== Manual question selection (replace a question from the bank) =====
+async function openReplaceModal(qid) {
+  if (!currentPaperData || !currentPaperId) return;
+  const q = currentPaperData.questions.find(x => x.id === qid);
+  if (!q) return;
+  replacingQid = qid;
+  document.getElementById('replaceSub').textContent = `${q.subject} · ${q.topic} · ${q.bloom_level}`;
+  document.getElementById('replaceCandidates').innerHTML = `<div class="an-empty">${t('modal.loading')}</div>`;
+  document.getElementById('replaceModal').dataset.open = '1';
+  try {
+    const url = `/api/questions?subject=${encodeURIComponent(q.subject)}&topic=${encodeURIComponent(q.topic)}&bloom_level=${encodeURIComponent(q.bloom_level)}`;
+    const res = await fetch(url);
+    const all = res.ok ? await res.json() : [];
+    // Exclude questions already in this paper.
+    const inPaper = new Set(currentPaperData.questions.map(x => x.id));
+    renderCandidates(all.filter(c => !inPaper.has(c.id)));
+  } catch (e) {
+    document.getElementById('replaceCandidates').innerHTML = `<div class="an-empty">Error: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function renderCandidates(list) {
+  const wrap = document.getElementById('replaceCandidates');
+  if (!list.length) { wrap.innerHTML = `<div class="an-empty">${t('modal.noCandidates')}</div>`; return; }
+  wrap.innerHTML = list.map(c => {
+    const ur = c.question_ur ? `<div class="c-ur urdu">${escapeHtml(c.question_ur)}</div>` : '';
+    return `<div class="cand">
+      <div class="c-tags">
+        <span class="pill" style="color:#2E5AAC;background:#EAF1FB;">${escapeHtml(c.bloom_level)}</span>
+        <span class="pill" style="color:#5B6678;background:#EEF1F6;">${escapeHtml(c.difficulty)}</span>
+        <span class="pill" style="color:#2E7D5B;background:#E6F4EC;">${c.marks} ${t('label.marks')}</span>
+      </div>
+      <div class="c-en">${escapeHtml(c.question_en || '')}</div>
+      ${ur}
+      <div class="c-foot">
+        <span style="font-size:12px;color:var(--muted)">${escapeHtml(c.topic || '')}</span>
+        <button class="gen-btn" style="min-height:40px;padding:0 16px" onclick="selectReplacement('${c.id}')">${t('btn.select')}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function selectReplacement(newId) {
+  if (!currentPaperId || !replacingQid) return;
+  try {
+    const res = await fetch(`/api/paper/${currentPaperId}/replace-question`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ old_question_id: replacingQid, new_question_id: newId }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Error');
+    currentPaperData = data;
+    renderPaperPreview(data);
+    renderBalanceSummary(data.balance_summary);
+    renderQuestions(data.questions);
+    setStatus(`Question replace ho gaya — Total marks: ${data.total_marks}`);
+    closeReplaceModal();
+  } catch (e) {
+    document.getElementById('replaceCandidates').innerHTML = `<div class="an-empty">Error: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function closeReplaceModal() {
+  document.getElementById('replaceModal').dataset.open = '0';
+  replacingQid = null;
 }
 
 function val(id) { return document.getElementById(id).value; }

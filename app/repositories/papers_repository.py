@@ -25,3 +25,16 @@ def find_by_id(paper_id: str) -> Optional[dict]:
     row = cur.execute("SELECT * FROM papers WHERE id = ?", (paper_id,)).fetchone()
     conn.close()
     return dict(row) if row else None
+
+
+def update_question_ids(paper_id: str, question_ids: list, total_marks: int) -> None:
+    """Replace a paper's question set + recomputed total in place — used when a
+    teacher manually swaps a question in the preview."""
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE papers SET question_ids = ?, total_marks = ? WHERE id = ?",
+        (json.dumps(question_ids), total_marks, paper_id),
+    )
+    conn.commit()
+    conn.close()

@@ -60,5 +60,9 @@ def persist_batch(ai_questions: list[dict], req: GenerateQuestionsRequest) -> li
     return saved_ids
 
 
-def list_questions(subject: str | None = None, topic: str | None = None) -> list:
-    return questions_repository.list_by_filters(subject=subject, topic=topic)
+def list_questions(
+    subject: str | None = None, topic: str | None = None, bloom_level: str | None = None
+) -> list:
+    return questions_repository.list_by_filters(
+        subject=subject, topic=topic, bloom_level=bloom_level
+    )

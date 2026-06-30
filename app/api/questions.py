@@ -49,6 +49,11 @@ def generate_questions(req: GenerateQuestionsRequest):
 
 
 @router.get("/api/questions", response_model=List[Question])
-def list_questions(subject: Optional[str] = None, topic: Optional[str] = None):
-    """Question bank browse karne ke liye."""
-    return question_service.list_questions(subject=subject, topic=topic)
+def list_questions(
+    subject: Optional[str] = None,
+    topic: Optional[str] = None,
+    bloom_level: Optional[str] = None,
+):
+    """Question bank browse karne ke liye. bloom_level filter manual
+    question-replace ke candidate list ke liye use hota hai."""
+    return question_service.list_questions(subject=subject, topic=topic, bloom_level=bloom_level)
