@@ -194,6 +194,42 @@
   details.qdetails { margin-top: 18px; }
   details.qdetails > summary { cursor: pointer; font-weight: 600; font-size: 14px; color: var(--primary); }
 
+  /* ---- Analytics (item analysis) ---- */
+  .an-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+  .an-card { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; background: #FBFCFE; }
+  .an-card .v { font-size: 22px; font-weight: 700; color: var(--primary); }
+  .an-card .c { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  table.an { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.an th, table.an td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+  table.an th { background: var(--tint2); font-size: 12.5px; color: var(--ink2); white-space: nowrap; }
+  table.an td.num, table.an th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.an tr.q-bad td { background: var(--err-bg); }
+  table.an tr.q-review td { background: var(--warn-bg); }
+  table.an tr.q-good td:first-child { box-shadow: inset 4px 0 0 var(--ok-tx); }
+  table.an tr.q-review td:first-child { box-shadow: inset 4px 0 0 var(--warn-tx); }
+  table.an tr.q-bad td:first-child { box-shadow: inset 4px 0 0 var(--err-tx); }
+  .pd { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pd.good { color: var(--ok-tx); }
+  .pd.mid { color: var(--warn-tx); }
+  .pd.weak { color: var(--err-tx); }
+  .pd.unreliable { color: var(--muted2); font-weight: 400; }
+  .bar-wrap { background: var(--line); border-radius: 5px; height: 14px; width: 108px; overflow: hidden; display: inline-block; vertical-align: middle; }
+  .bar { height: 100%; border-radius: 5px; }
+  .bar.good { background: var(--ok-tx); }
+  .bar.mid { background: var(--warn-tx); }
+  .bar.weak { background: var(--err-tx); }
+  .qbadge { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+  .qbadge.q-good { background: var(--ok-bg); color: var(--ok-tx); }
+  .qbadge.q-review { background: var(--warn-bg); color: var(--warn-tx); }
+  .qbadge.q-bad { background: var(--err-bg); color: var(--err-tx); }
+  .an-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); margin: 4px 0 12px; }
+  .an-legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
+  .an-legend .q-good { background: var(--ok-tx); }
+  .an-legend .q-review { background: var(--warn-tx); }
+  .an-legend .q-bad { background: var(--err-tx); }
+  .flag-reason { font-size: 12px; color: var(--err-tx); }
+  .an-empty { color: var(--muted); font-size: 14px; padding: 10px 0; }
+
   /* ---- Responsive: sidebar -> bottom tab bar (Direction A on mobile) ---- */
   @media (max-width: 1024px) { .twocol { grid-template-columns: 1fr; } }
   @media (max-width: 760px) {
@@ -247,6 +283,7 @@
       <a class="nav-link" data-nav="syllabus" onclick="showScreen('syllabus')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="M7 9l5-5 5 5"></path><path d="M4 20h16"></path></svg>Syllabus upload</a>
       <a class="nav-link" data-nav="adaptive" onclick="showScreen('adaptive')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="3.4"></circle></svg>Adaptive paper</a>
       <a class="nav-link" data-nav="results" onclick="showScreen('results')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="20" x2="20" y2="20"></line><rect x="6" y="11" width="3" height="7" fill="currentColor" stroke="none"></rect><rect x="11" y="6" width="3" height="12" fill="currentColor" stroke="none"></rect><rect x="16" y="14" width="3" height="4" fill="currentColor" stroke="none"></rect></svg>Results &amp; preview</a>
+      <a class="nav-link" data-nav="analytics" onclick="showScreen('analytics')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9"></path><path d="M21 3v6h-6"></path><path d="M12 12 21 3"></path></svg>Analytics</a>
       <a class="nav-link" data-nav="settings" onclick="showScreen('settings')"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 9.5 12 4l9 5.5"></path><path d="M5 11v8h14v-8"></path><path d="M9 19v-5h6v5"></path></svg>More / settings</a>
     </nav>
     <div class="sidebar-foot">
@@ -438,6 +475,50 @@
         </div>
       </section>
 
+      <!-- ===== ANALYTICS (item analysis — Phase 2.5) ===== -->
+      <section class="screen" data-screen="analytics">
+        <div class="head">
+          <div><h1 class="h1">Analytics</h1><p class="sub">Har question ka Difficulty Index (P) aur Discrimination Index (D), plus Bloom comparison — uploaded results se. Real data; dummy nahi.</p></div>
+        </div>
+
+        <div class="card" style="margin-bottom:18px">
+          <div class="field-row" style="align-items:flex-end">
+            <div>
+              <label>Paper ID</label>
+              <input id="anPaperId" placeholder="paper banane ke baad jo ID milti hai (Results screen)" />
+            </div>
+            <div style="flex:0 0 auto; align-self:flex-end">
+              <button class="gen-btn" onclick="loadAnalytics()">Analytics dekhen</button>
+            </div>
+          </div>
+          <div id="anUploadPicker" style="display:none; margin-top:6px">
+            <label>Kaunsa upload (newest pehle)</label>
+            <select id="anUploadSelect" onchange="onAnUploadChange()"></select>
+          </div>
+          <div id="anStatus" style="margin-top:10px; font-size:14px; color:var(--muted); min-height:20px"></div>
+        </div>
+
+        <div id="anDashboard" style="display:none">
+          <div id="anCards" class="an-cards"></div>
+
+          <div class="card" style="margin-top:18px">
+            <div class="card-title">Per-question item analysis</div>
+            <div class="an-legend">
+              <span><i class="dot q-good"></i> Good question</span>
+              <span><i class="dot q-review"></i> Review</span>
+              <span><i class="dot q-bad"></i> Problematic</span>
+            </div>
+            <div style="overflow-x:auto"><div id="anQuestionsWrap"></div></div>
+          </div>
+
+          <div class="card" style="margin-top:18px">
+            <div class="card-title">Bloom's Taxonomy comparison</div>
+            <p class="sub" style="margin-top:2px">Kaunse cognitive levels kamzor hain — marks-weighted average.</p>
+            <div style="overflow-x:auto"><div id="anBloomWrap"></div></div>
+          </div>
+        </div>
+      </section>
+
       <!-- ===== SETTINGS ===== -->
       <section class="screen" data-screen="settings">
         <div class="head"><div><h1 class="h1">School settings</h1><p class="sub">Letterhead / logo — har paper aur print par istemaal hoga.</p></div></div>
@@ -485,6 +566,7 @@
       <div class="nav-i" data-nav="syllabus" onclick="showScreen('syllabus')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="M7 9l5-5 5 5"></path><path d="M4 20h16"></path></svg>Syllabus</div>
       <div class="nav-i" data-nav="adaptive" onclick="showScreen('adaptive')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="3.4"></circle></svg>Adaptive</div>
       <div class="nav-i" data-nav="results" onclick="showScreen('results')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="20" x2="20" y2="20"></line><rect x="6" y="11" width="3" height="7" fill="currentColor" stroke="none"></rect><rect x="11" y="6" width="3" height="12" fill="currentColor" stroke="none"></rect><rect x="16" y="14" width="3" height="4" fill="currentColor" stroke="none"></rect></svg>Results</div>
+      <div class="nav-i" data-nav="analytics" onclick="showScreen('analytics')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9"></path><path d="M21 3v6h-6"></path><path d="M12 12 21 3"></path></svg>Analytics</div>
       <div class="nav-i" data-nav="settings" onclick="showScreen('settings')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="17" x2="20" y2="17"></line></svg>More</div>
     </div>
   </div>
@@ -503,6 +585,11 @@ function showScreen(name) {
   document.querySelectorAll('[data-nav]').forEach(n => {
     n.dataset.active = (n.dataset.nav === name) ? '1' : '0';
   });
+  // Analytics screen: prefill the Paper ID with the paper built this session.
+  if (name === 'analytics') {
+    const inp = document.getElementById('anPaperId');
+    if (inp && !inp.value && currentPaperId) inp.value = currentPaperId;
+  }
   window.scrollTo(0, 0);
 }
 
@@ -992,6 +1079,187 @@ function syncPaperSummary() {
 ['schoolNameEn', 'schoolNameUr'].forEach(id => {
   document.getElementById(id).addEventListener('input', syncHeaderPreview);
 });
+
+// ===== Analytics (item analysis — Phase 2.5) =====
+// Reuses the existing /api/paper/{id}/dashboard endpoint. Functions are
+// namespaced (an*) so they don't collide with the paper-review renderQuestions.
+const BLOOM_ORDER = ['REMEMBER', 'UNDERSTAND', 'APPLY', 'ANALYZE', 'EVALUATE', 'CREATE'];
+
+async function loadAnalytics() {
+  const paperId = val('anPaperId').trim();
+  if (!paperId) { anStatus('Pehle paper ID daalen.', 'err'); return; }
+  document.getElementById('anDashboard').style.display = 'none';
+  document.getElementById('anUploadPicker').style.display = 'none';
+  anStatus('Analytics load ho rahi hai...');
+  try {
+    const res = await fetch(`/api/paper/${encodeURIComponent(paperId)}/dashboard`);
+    if (!res.ok) { anStatus('⚠️ ' + await anReadError(res), 'err'); return; }
+    const data = await res.json();
+    renderAnalytics(data);
+    anStatus('');
+    await anLoadUploadPicker(paperId, data.upload && data.upload.id);
+  } catch (e) {
+    anStatus('Error: ' + e.message, 'err');
+  }
+}
+
+// Show an upload switcher only when a paper has more than one results upload.
+async function anLoadUploadPicker(paperId, currentUploadId) {
+  try {
+    const res = await fetch(`/api/paper/${encodeURIComponent(paperId)}/uploads`);
+    if (!res.ok) return;
+    const uploads = (await res.json()).uploads || [];
+    if (uploads.length <= 1) return;
+    const sel = document.getElementById('anUploadSelect');
+    sel.innerHTML = uploads.map(u =>
+      `<option value="${u.id}" ${u.id === currentUploadId ? 'selected' : ''}>${escapeHtml(u.filename)} — ${anFmtDate(u.uploaded_at)}</option>`
+    ).join('');
+    document.getElementById('anUploadPicker').style.display = 'block';
+  } catch (e) {
+    // picker is optional — analytics already rendered from the latest upload
+  }
+}
+
+async function onAnUploadChange() {
+  const uploadId = val('anUploadSelect');
+  if (!uploadId) return;
+  anStatus('Upload load ho raha hai...');
+  try {
+    const res = await fetch(`/api/upload/${encodeURIComponent(uploadId)}/dashboard`);
+    if (!res.ok) { anStatus('⚠️ ' + await anReadError(res), 'err'); return; }
+    renderAnalytics(await res.json());
+    anStatus('');
+  } catch (e) {
+    anStatus('Error: ' + e.message, 'err');
+  }
+}
+
+function renderAnalytics(data) {
+  renderAnCards(data.summary);
+  renderAnQuestions(data.questions);
+  renderAnBlooms(data.bloom_breakdown);
+  document.getElementById('anDashboard').style.display = 'block';
+}
+
+function renderAnCards(s) {
+  const cards = [
+    { v: s.student_count, c: 'Students' },
+    { v: anPct(s.class_average_percent), c: `Class average (${s.class_average_marks}/${s.total_marks})` },
+    { v: anPct(s.pass_percent), c: `Pass rate (≥${s.pass_threshold_percent}%)` },
+    { v: anPct(s.highest_percent), c: 'Highest' },
+    { v: anPct(s.lowest_percent), c: 'Lowest' },
+  ];
+  document.getElementById('anCards').innerHTML = cards.map(c =>
+    `<div class="an-card"><div class="v">${c.v}</div><div class="c">${c.c}</div></div>`
+  ).join('');
+}
+
+function renderAnQuestions(questions) {
+  const wrap = document.getElementById('anQuestionsWrap');
+  if (!questions || !questions.length) { wrap.innerHTML = '<p class="an-empty">Koi question data nahi.</p>'; return; }
+  const rows = questions.map(q => {
+    const qual = anQuality(q);
+    return `<tr class="${qual.k}">
+      <td>${q.flag ? '⚠️ ' : ''}Q${q.question_index}</td>
+      <td>${escapeHtml(q.bloom_level)}</td>
+      <td class="num">${q.average_marks}/${q.max_marks}</td>
+      <td>${anBarCell(q.average_percent)}</td>
+      <td class="num">${anPCell(q)}</td>
+      <td class="num">${anDCell(q)}</td>
+      <td><span class="qbadge ${qual.k}">${qual.label}</span></td>
+      <td>${q.flag ? `<span class="flag-reason">${escapeHtml(q.flag)}</span>` : ''}</td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML = `<table class="an">
+    <thead><tr>
+      <th>Question</th><th>Bloom</th><th class="num">Avg marks</th><th>Avg %</th>
+      <th class="num">Difficulty Index (P)</th><th class="num">Discrimination Index (D)</th>
+      <th>Quality</th><th>Flag</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <p class="sub" style="margin-top:10px">
+    <strong>P-value</strong> (0–1): &lt;0.30 bahut mushkil, &gt;0.85 bahut aasaan.
+    <strong>D-index</strong> (−1 to 1): ≥0.30 acha, &lt;0.20 kamzor, negative = answer key check karein.
+    Choti class (&lt;10 students) mein D reliable nahi — greyed (*).
+  </p>`;
+}
+
+// Map the backend's flag + bands onto green / yellow / red.
+function anQuality(q) {
+  if (!q.flag) return { k: 'q-good', label: 'Good' };
+  if (q.d_reliable && q.d_band === 'problematic') return { k: 'q-bad', label: 'Problematic' };
+  return { k: 'q-review', label: 'Review' };
+}
+
+// P-value cell, coloured by band (matches dashboard.html).
+function anPCell(q) {
+  const cls = q.p_band === 'good' ? 'good' : 'weak';
+  return `<span class="pd ${cls}">${q.p_value.toFixed(2)}</span>`;
+}
+
+// D-index cell. Greyed + asterisked when the class is too small to trust it.
+function anDCell(q) {
+  if (!q.d_reliable) {
+    return `<span class="pd unreliable" title="Choti class — D-index reliable nahi">${q.d_index.toFixed(2)}*</span>`;
+  }
+  const cls = (q.d_band === 'good' || q.d_band === 'excellent') ? 'good'
+            : q.d_band === 'acceptable' ? 'mid' : 'weak';
+  return `<span class="pd ${cls}">${q.d_index.toFixed(2)}</span>`;
+}
+
+function renderAnBlooms(blooms) {
+  const wrap = document.getElementById('anBloomWrap');
+  if (!blooms || !blooms.length) { wrap.innerHTML = '<p class="an-empty">Koi Bloom data nahi.</p>'; return; }
+  const sorted = [...blooms].sort((a, b) => anBloomRank(a.bloom_level) - anBloomRank(b.bloom_level));
+  const rows = sorted.map(b => `<tr>
+    <td>${escapeHtml(b.bloom_level)}</td>
+    <td class="num">${b.question_count}</td>
+    <td class="num">${b.average_marks}/${b.max_marks}</td>
+    <td>${anBarCell(b.average_percent)}</td>
+  </tr>`).join('');
+  wrap.innerHTML = `<table class="an">
+    <thead><tr><th>Bloom level</th><th class="num">Questions</th><th class="num">Avg marks</th><th>Avg %</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function anBarCell(percent) {
+  const cls = percent >= 60 ? 'good' : percent >= 40 ? 'mid' : 'weak';
+  return `<span class="bar-wrap"><span class="bar ${cls}" style="width:${Math.max(0, Math.min(100, percent))}%"></span></span> ${anPct(percent)}`;
+}
+
+function anBloomRank(level) {
+  const i = BLOOM_ORDER.indexOf((level || '').toUpperCase());
+  return i === -1 ? BLOOM_ORDER.length : i;
+}
+
+function anPct(n) { return `${n}%`; }
+
+function anFmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return isNaN(d) ? iso : d.toLocaleString();
+}
+
+function anStatus(msg, kind) {
+  const el = document.getElementById('anStatus');
+  el.textContent = msg || '';
+  el.style.color = kind === 'err' ? 'var(--err-tx)' : 'var(--muted)';
+}
+
+// API always returns JSON; pull `detail` for the user-facing message.
+async function anReadError(res) {
+  try {
+    const d = await res.json();
+    if (d && d.detail != null) return typeof d.detail === 'string' ? d.detail : JSON.stringify(d.detail);
+  } catch (e) { /* not JSON — fall through */ }
+  return `HTTP ${res.status}`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
 
 function val(id) { return document.getElementById(id).value; }
 function setStatus(msg) { document.getElementById('status').textContent = msg; }
