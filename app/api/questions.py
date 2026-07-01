@@ -4,8 +4,8 @@ from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException
 
-from app.models.requests import GenerateQuestionsRequest
-from app.models.responses import GenerateQuestionsResponse, Question
+from app.schemas.requests import GenerateQuestionsRequest
+from app.schemas.responses import GenerateQuestionsResponse, Question
 from app.services import question_service, syllabus_service
 
 router = APIRouter()

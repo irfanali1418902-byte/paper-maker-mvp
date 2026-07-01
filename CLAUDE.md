@@ -149,9 +149,9 @@ so callers don't have to know we use SQLite.
 
 ### Location
 
-- Request models: `app/models/requests.py`
-- Response models: `app/models/responses.py`
-- Shared domain models (rare): `app/models/domain.py`
+- Request models: `app/schemas/requests.py`
+- Response models: `app/schemas/responses.py`
+- Shared domain models (rare): `app/schemas/domain.py`
 
 Routes import from `requests`/`responses`. Services may import from
 `requests` (to type their inputs). Repositories never import models —

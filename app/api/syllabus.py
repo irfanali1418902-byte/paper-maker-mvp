@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
-from app.models.responses import (
+from app.schemas.responses import (
     SubjectGrade,
     SyllabusImportResponse,
     SyllabusTopic,

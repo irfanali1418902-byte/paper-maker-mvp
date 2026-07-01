@@ -48,9 +48,9 @@ Dependencies point **downward only**. A lower layer never imports an upper one.
    └──────────────────────────────────────────────────────────┘
 ```
 
-`app/models/` (Pydantic request/response shapes) is a supporting module, not a
+`app/schemas/` (Pydantic request/response shapes) is a supporting module, not a
 layer: imported by routes for validation and sometimes by services for typed
-inputs. Models carry **shape, not behavior** — no DB access, no AI calls.
+inputs. Schemas carry **shape, not behavior** — no DB access, no AI calls.
 
 ### Layer responsibilities
 
@@ -145,7 +145,7 @@ paper-maker-mvp/
 │   │   └── usage_log_repository.py
 │   ├── core/
 │   │   └── database.py         # DATABASE — connection factory + schema + migrations
-│   └── models/
+│   └── schemas/
 │       ├── requests.py         # Pydantic *Request models
 │       └── responses.py        # Pydantic *Response models
 ├── static/

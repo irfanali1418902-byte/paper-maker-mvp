@@ -2,8 +2,8 @@
 
 from fastapi import APIRouter, File, HTTPException, Response, UploadFile
 
-from app.models.requests import AdaptivePaperRequest, GeneratePaperRequest, ReplaceQuestionRequest
-from app.models.responses import AdaptivePaperResponse, GeneratePaperResponse, PaperResponse
+from app.schemas.requests import AdaptivePaperRequest, GeneratePaperRequest, ReplaceQuestionRequest
+from app.schemas.responses import AdaptivePaperResponse, GeneratePaperResponse, PaperResponse
 from app.services import paper_service, result_service
 from app.services.exceptions import ResultsValidationError
 

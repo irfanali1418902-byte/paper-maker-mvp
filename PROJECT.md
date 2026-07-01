@@ -29,7 +29,7 @@ paper-maker-mvp/
 │   │                    #   dashboard, item_analysis, adaptive, export, syllabus, settings)
 │   ├── repositories/    # SQLite access — sirf yahan SQL strings hain
 │   ├── core/database.py # Connection factory + schema bootstrap + migrations
-│   └── models/          # Pydantic request + response shapes
+│   └── schemas/         # Pydantic request + response shapes
 ├── static/              # index.html (paper maker + adaptive) + dashboard.html
 ├── tests/               # pytest suite
 ├── import_syllabus.py   # CLI: syllabus CSV import

@@ -7,7 +7,7 @@ paper's latest upload).
 
 from fastapi import APIRouter, HTTPException
 
-from app.models.responses import DashboardResponse, UploadsResponse
+from app.schemas.responses import DashboardResponse, UploadsResponse
 from app.services import dashboard_service
 
 router = APIRouter()

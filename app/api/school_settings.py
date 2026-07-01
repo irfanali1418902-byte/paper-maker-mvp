@@ -2,8 +2,8 @@
 
 from fastapi import APIRouter, HTTPException
 
-from app.models.requests import SchoolSettings
-from app.models.responses import StatusResponse
+from app.schemas.requests import SchoolSettings
+from app.schemas.responses import StatusResponse
 from app.services import settings_service
 
 router = APIRouter()

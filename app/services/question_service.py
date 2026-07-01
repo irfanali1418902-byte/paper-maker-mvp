@@ -3,8 +3,8 @@
 import json
 import uuid
 
-from app.models.requests import GenerateQuestionsRequest
 from app.repositories import questions_repository
+from app.schemas.requests import GenerateQuestionsRequest
 from app.services import ai_service, bloom_service
 
 

@@ -1,7 +1,7 @@
 """School settings (singleton row id=1)."""
 
-from app.models.requests import SchoolSettings
 from app.repositories import settings_repository
+from app.schemas.requests import SchoolSettings
 
 
 def get_settings() -> dict:

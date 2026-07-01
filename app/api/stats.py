@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, HTTPException
 
-from app.models.responses import QuickStatsResponse
+from app.schemas.responses import QuickStatsResponse
 from app.services import stats_service
 
 router = APIRouter()

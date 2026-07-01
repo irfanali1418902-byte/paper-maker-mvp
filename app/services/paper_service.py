@@ -3,8 +3,8 @@
 import json
 import uuid
 
-from app.models.requests import AdaptivePaperRequest, GeneratePaperRequest
 from app.repositories import papers_repository, questions_repository
+from app.schemas.requests import AdaptivePaperRequest, GeneratePaperRequest
 from app.services import adaptive_service, bloom_service, dashboard_service, item_analysis_service
 
 
