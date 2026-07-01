@@ -1,8 +1,10 @@
 """SQL access for the syllabus_topics table."""
 
+import sqlite3
 from typing import Optional
 
 from app.core.database import get_connection
+from app.services.exceptions import DuplicateSyllabusTopic
 
 
 def find_by_id(topic_id: str) -> Optional[dict]:
@@ -52,9 +54,11 @@ def insert(
     page_no: Optional[int],
     learning_outcome: str,
 ) -> None:
-    """Used by the CSV/PDF importers. Raises on UNIQUE constraint violation;
-    caller decides what to do with duplicates. The connection is closed even
-    on that raise — a leaked connection locks the DB file on Windows (§5)."""
+    """Used by the CSV/PDF importers. Raises DuplicateSyllabusTopic on a
+    UNIQUE-constraint violation so the caller never has to know we're on
+    SQLite (CLAUDE.md §2); caller decides what to do with duplicates. The
+    connection is closed even on that raise — a leaked connection locks the
+    DB file on Windows (§5)."""
     conn = get_connection()
     try:
         cur = conn.cursor()
@@ -77,5 +81,7 @@ def insert(
             ),
         )
         conn.commit()
+    except sqlite3.IntegrityError as e:
+        raise DuplicateSyllabusTopic(subtopic_title) from e
     finally:
         conn.close()

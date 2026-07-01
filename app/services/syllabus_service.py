@@ -3,7 +3,6 @@
 import csv
 import io
 import os
-import sqlite3
 import uuid
 import zipfile
 
@@ -12,7 +11,7 @@ from pypdf import PdfReader
 
 from app.repositories import syllabus_repository
 from app.services import ai_service
-from app.services.exceptions import AIGenerationFailed
+from app.services.exceptions import AIGenerationFailed, DuplicateSyllabusTopic
 
 _ACTIVITY_TO_DIFFICULTY = {
     "Introduction": "easy",
@@ -154,8 +153,8 @@ def _save_topics(topics: list, subject: str, grade: str) -> dict:
                 learning_outcome=(topic.get("learning_outcome") or "").strip(),
             )
             inserted += 1
-        except sqlite3.IntegrityError:
-            # UNIQUE-constraint duplicate — same topic already imported, skip.
+        except DuplicateSyllabusTopic:
+            # Same topic already imported, skip.
             skipped += 1
     return {"inserted": inserted, "skipped": skipped}
 
@@ -272,10 +271,10 @@ def import_from_csv(csv_path: str, subject: str, grade: str) -> int:
                     learning_outcome=row.get("learning_outcome_snippet", ""),
                 )
                 inserted += 1
-            except sqlite3.IntegrityError as e:
-                # UNIQUE-constraint duplicate row — expected on re-imports, skip
-                # quietly and continue. Other failures (missing CSV column,
-                # non-int unit_no, etc.) are NOT caught here on purpose: they
+            except DuplicateSyllabusTopic as e:
+                # Duplicate row — expected on re-imports, skip quietly and
+                # continue. Other failures (missing CSV column, non-int
+                # unit_no, etc.) are NOT caught here on purpose: they
                 # represent operator-visible CSV problems and should crash
                 # loudly so they get fixed rather than silently swallowed.
                 print(f"Skipped duplicate row (subtopic: {row.get('subtopic_title')}): {e}")

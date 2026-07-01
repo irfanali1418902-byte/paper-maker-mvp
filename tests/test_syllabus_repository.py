@@ -1,10 +1,9 @@
 """Basic tests for syllabus_repository."""
 
-import sqlite3
-
 import pytest
 
 from app.repositories import syllabus_repository
+from app.services.exceptions import DuplicateSyllabusTopic
 
 
 def _insert_topic(
@@ -89,8 +88,9 @@ def test_list_distinct_subject_grade(test_db):
 
 def test_insert_duplicate_raises(test_db):
     """UNIQUE constraint on (subject, grade, unit_no, subtopic_title, page_no).
-    Caller (CSV importer) catches this to skip dupes."""
+    The repository translates the SQLite error into a domain exception so the
+    caller (CSV importer) never touches sqlite3 to skip dupes."""
     _insert_topic(topic_id="t1")
-    with pytest.raises(sqlite3.IntegrityError):
+    with pytest.raises(DuplicateSyllabusTopic):
         # Same key tuple, different topic_id — should violate the constraint.
         _insert_topic(topic_id="t2")

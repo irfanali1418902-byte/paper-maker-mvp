@@ -28,6 +28,14 @@ class AIGenerationFailed(Exception):
     so the route can surface it straight to the teacher (CLAUDE.md §2, §6)."""
 
 
+class DuplicateSyllabusTopic(Exception):
+    """Raised by syllabus_repository.insert when a topic with the same
+    (subject, grade, unit_no, subtopic_title, page_no) key already exists.
+    Importers catch this to skip duplicates on re-import — the repository
+    translates the underlying UNIQUE-constraint violation so callers never
+    touch sqlite3 directly (CLAUDE.md §2)."""
+
+
 class PdfConversionFailed(Exception):
     """Raised by export_service when the docx->PDF step fails — typically
     because LibreOffice (soffice) isn't installed/found on the server, or the
