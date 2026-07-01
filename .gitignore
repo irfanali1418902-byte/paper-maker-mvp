@@ -1,6 +1,8 @@
 # Secrets — never commit API keys
 .env
 .env.*
+# ...but the placeholder sample is safe and belongs in the repo
+!.env.example
 
 # SQLite database files (runtime state, not source)
 *.db
