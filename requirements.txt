@@ -4,6 +4,7 @@ requests
 pydantic>=2.9
 python-dotenv
 pytest
+httpx2
 ruff
 black
 pre-commit
