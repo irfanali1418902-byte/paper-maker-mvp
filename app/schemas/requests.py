@@ -2,7 +2,7 @@
 
 from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class GenerateQuestionsRequest(BaseModel):
@@ -21,7 +21,10 @@ class GeneratePaperRequest(BaseModel):
     total_questions: int = 10
     bloom_distribution: str = "balanced"
     difficulty: Optional[str] = None
-    paper_type: str = "mixed"  # mcq | mixed | subjective
+    paper_type: str = "mixed"  # mcq | mixed | subjective | custom-ratio
+    # Sirf paper_type == "custom-ratio" par relevant. MCQ group ka %; subjective
+    # group = 100 - mcq_percent. Range Pydantic level par enforce (0-100).
+    mcq_percent: Optional[int] = Field(default=None, ge=0, le=100)
 
 
 class AdaptivePaperRequest(BaseModel):
