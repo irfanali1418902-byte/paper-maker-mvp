@@ -27,7 +27,9 @@ def client(test_db):
     return TestClient(app)
 
 
-def _insert_question(subject="Mathematics", topic="Fractions", bloom="UNDERSTAND", marks=3):
+def _insert_question(
+    subject="Mathematics", topic="Fractions", bloom="UNDERSTAND", marks=3, qtype="multiple-choice"
+):
     qid = str(uuid.uuid4())
     questions_repository.insert(
         {
@@ -36,7 +38,7 @@ def _insert_question(subject="Mathematics", topic="Fractions", bloom="UNDERSTAND
             "topic": topic,
             "bloom_level": bloom,
             "difficulty": "medium",
-            "question_type": "multiple-choice",
+            "question_type": qtype,
             "marks": marks,
             "question_en": f"Q-{qid[:4]}",
             "question_ur": "سوال",
@@ -130,6 +132,57 @@ def test_generate_paper_missing_subject_422(client):
     # subject is required on GeneratePaperRequest -> Pydantic 422, not 500.
     r = client.post("/api/generate-paper", json={"total_questions": 5})
     assert r.status_code == 422
+
+
+# ---- paper_type filter (MCQ / mixed / subjective) --------------------------
+
+
+def _seed_subjective(subject="Mathematics"):
+    """Two short-answer questions per Bloom level."""
+    return [
+        _insert_question(subject, "Fractions", lvl, qtype="short-answer")
+        for lvl in BLOOM_LEVELS
+        for _ in range(2)
+    ]
+
+
+def test_paper_type_mcq_only_picks_mcq(client):
+    _seed_bank()  # all multiple-choice
+    _seed_subjective()  # add short-answer to the same subject
+    r = client.post(
+        "/api/generate-paper",
+        json={"subject": "Mathematics", "total_questions": 6, "paper_type": "mcq"},
+    )
+    assert r.status_code == 200
+    assert all(q["question_type"] == "multiple-choice" for q in r.json()["questions"])
+
+
+def test_paper_type_subjective_picks_subjective(client):
+    _seed_bank()
+    _seed_subjective()
+    r = client.post(
+        "/api/generate-paper",
+        json={"subject": "Mathematics", "total_questions": 6, "paper_type": "subjective"},
+    )
+    assert r.status_code == 200
+    assert all(q["question_type"] == "short-answer" for q in r.json()["questions"])
+
+
+def test_paper_type_subjective_empty_bank_404(client):
+    _seed_bank()  # MCQ-only bank, no subjective questions
+    r = client.post(
+        "/api/generate-paper",
+        json={"subject": "Mathematics", "total_questions": 6, "paper_type": "subjective"},
+    )
+    assert r.status_code == 404
+    assert "subjective" in r.json()["detail"]
+
+
+def test_paper_type_defaults_to_mixed(client):
+    # No paper_type in body -> mixed -> any type, MCQ-only bank still works.
+    _seed_bank()
+    r = client.post("/api/generate-paper", json={"subject": "Mathematics", "total_questions": 6})
+    assert r.status_code == 200
 
 
 # ---- /api/paper/{id} --------------------------------------------------------

@@ -442,6 +442,13 @@
               <option value="advanced" data-i18n="opt.advanced">Advanced</option>
             </select>
 
+            <label data-i18n="form.paperType">Paper type</label>
+            <select id="paperType">
+              <option value="mixed" selected data-i18n="opt.mixed">Mixed (sab types)</option>
+              <option value="mcq" data-i18n="opt.mcq">MCQ-only</option>
+              <option value="subjective" data-i18n="opt.subjective">Subjective</option>
+            </select>
+
             <div class="actions">
               <button class="gen-btn" onclick="generateQuestions()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4 12.7 8.3 17 10 12.7 11.7 11 16 9.3 11.7 5 10 9.3 8.3z"></path></svg><span data-i18n="btn.genQuestions">1. Generate questions (AI)</span></button>
               <button class="ghost-btn" onclick="buildPaper()" data-i18n="btn.buildPaper">2. Build paper from bank</button>
@@ -720,8 +727,10 @@ const I18N = {
     'form.totalQuestions': 'Total questions',
     'form.difficulty': 'Difficulty',
     'form.bloomDist': 'Bloom distribution',
+    'form.paperType': 'Paper type',
     'opt.easy': 'Easy', 'opt.medium': 'Medium', 'opt.hard': 'Hard',
     'opt.balanced': 'Balanced', 'opt.foundational': 'Foundational', 'opt.advanced': 'Advanced',
+    'opt.mixed': 'Mixed (all types)', 'opt.mcq': 'MCQ-only', 'opt.subjective': 'Subjective',
     'btn.genQuestions': '1. Generate questions (AI)',
     'btn.buildPaper': '2. Build paper from bank',
     'btn.toExport': 'Export & results →',
@@ -808,8 +817,10 @@ const I18N = {
     'form.totalQuestions': 'کل سوالات',
     'form.difficulty': 'دشواری',
     'form.bloomDist': 'بلوم تقسیم',
+    'form.paperType': 'پرچہ کی قسم',
     'opt.easy': 'آسان', 'opt.medium': 'درمیانہ', 'opt.hard': 'مشکل',
     'opt.balanced': 'متوازن', 'opt.foundational': 'بنیادی', 'opt.advanced': 'اعلیٰ',
+    'opt.mixed': 'ملا جلا (تمام اقسام)', 'opt.mcq': 'صرف MCQ', 'opt.subjective': 'موضوعی',
     'btn.genQuestions': '۱۔ سوالات بنائیں (اے آئی)',
     'btn.buildPaper': '۲۔ بینک سے پرچہ بنائیں',
     'btn.toExport': 'ایکسپورٹ اور نتائج ←',
@@ -1171,7 +1182,8 @@ async function buildPaper() {
     subject: val('subject'),
     total_questions: parseInt(val('totalQuestions')),
     bloom_distribution: val('bloomDist'),
-    difficulty: val('difficulty')
+    difficulty: val('difficulty'),
+    paper_type: val('paperType')
   };
   try {
     const res = await apiFetch('/api/generate-paper', {
