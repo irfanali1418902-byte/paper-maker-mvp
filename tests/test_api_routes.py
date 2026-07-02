@@ -27,7 +27,9 @@ def client(test_db):
     return TestClient(app)
 
 
-def _insert_question(subject="Mathematics", topic="Fractions", bloom="UNDERSTAND", marks=3):
+def _insert_question(
+    subject="Mathematics", topic="Fractions", bloom="UNDERSTAND", marks=3, qtype="multiple-choice"
+):
     qid = str(uuid.uuid4())
     questions_repository.insert(
         {
@@ -36,7 +38,7 @@ def _insert_question(subject="Mathematics", topic="Fractions", bloom="UNDERSTAND
             "topic": topic,
             "bloom_level": bloom,
             "difficulty": "medium",
-            "question_type": "multiple-choice",
+            "question_type": qtype,
             "marks": marks,
             "question_en": f"Q-{qid[:4]}",
             "question_ur": "سوال",
@@ -130,6 +132,57 @@ def test_generate_paper_missing_subject_422(client):
     # subject is required on GeneratePaperRequest -> Pydantic 422, not 500.
     r = client.post("/api/generate-paper", json={"total_questions": 5})
     assert r.status_code == 422
+
+
+# ---- paper_type filter (MCQ / mixed / subjective) --------------------------
+
+
+def _seed_subjective(subject="Mathematics"):
+    """Two short-answer questions per Bloom level."""
+    return [
+        _insert_question(subject, "Fractions", lvl, qtype="short-answer")
+        for lvl in BLOOM_LEVELS
+        for _ in range(2)
+    ]
+
+
+def test_paper_type_mcq_only_picks_mcq(client):
+    _seed_bank()  # all multiple-choice
+    _seed_subjective()  # add short-answer to the same subject
+    r = client.post(
+        "/api/generate-paper",
+        json={"subject": "Mathematics", "total_questions": 6, "paper_type": "mcq"},
+    )
+    assert r.status_code == 200
+    assert all(q["question_type"] == "multiple-choice" for q in r.json()["questions"])
+
+
+def test_paper_type_subjective_picks_subjective(client):
+    _seed_bank()
+    _seed_subjective()
+    r = client.post(
+        "/api/generate-paper",
+        json={"subject": "Mathematics", "total_questions": 6, "paper_type": "subjective"},
+    )
+    assert r.status_code == 200
+    assert all(q["question_type"] == "short-answer" for q in r.json()["questions"])
+
+
+def test_paper_type_subjective_empty_bank_404(client):
+    _seed_bank()  # MCQ-only bank, no subjective questions
+    r = client.post(
+        "/api/generate-paper",
+        json={"subject": "Mathematics", "total_questions": 6, "paper_type": "subjective"},
+    )
+    assert r.status_code == 404
+    assert "subjective" in r.json()["detail"]
+
+
+def test_paper_type_defaults_to_mixed(client):
+    # No paper_type in body -> mixed -> any type, MCQ-only bank still works.
+    _seed_bank()
+    r = client.post("/api/generate-paper", json={"subject": "Mathematics", "total_questions": 6})
+    assert r.status_code == 200
 
 
 # ---- /api/paper/{id} --------------------------------------------------------
@@ -249,6 +302,50 @@ def test_generate_questions_ai_mocked(client, monkeypatch):
 def test_generate_questions_missing_subject_400(client):
     r = client.post("/api/generate-questions", json={"subject": "", "topic": ""})
     assert r.status_code == 400
+
+
+def test_generate_subjective_then_build_subjective_paper(client, monkeypatch):
+    # Full loop: AI se short-answer questions generate -> subjective paper assemble.
+    from app.services import ai_service
+
+    def fake_ai(**kw):
+        return [
+            {
+                "bloom_level": lvl,
+                "question_type": "short-answer",
+                "question_en": "Explain...",
+                "question_ur": "وضاحت کریں",
+                "options_en": [],
+                "options_ur": [],
+                "correct_answer_en": "model answer",
+                "correct_answer_ur": "نمونہ جواب",
+                "explanation_en": "",
+                "explanation_ur": "",
+                "visual_emoji": None,
+                "visual_count": None,
+            }
+            for lvl in BLOOM_LEVELS
+        ]
+
+    monkeypatch.setattr(ai_service, "generate_questions_from_ai", fake_ai)
+
+    gen = client.post(
+        "/api/generate-questions",
+        json={
+            "subject": "Mathematics",
+            "topic": "Fractions",
+            "total_questions": 6,
+            "question_types": ["short-answer"],
+        },
+    )
+    assert gen.status_code == 200 and gen.json()["saved_count"] == 6
+
+    paper = client.post(
+        "/api/generate-paper",
+        json={"subject": "Mathematics", "total_questions": 6, "paper_type": "subjective"},
+    )
+    assert paper.status_code == 200
+    assert all(q["question_type"] == "short-answer" for q in paper.json()["questions"])
 
 
 # ---- API-key auth -----------------------------------------------------------

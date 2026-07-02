@@ -435,11 +435,25 @@
               </div>
             </div>
 
+            <label data-i18n="form.questionTypes">Question types (generate)</label>
+            <div style="display:flex; gap:18px; flex-wrap:wrap; margin-bottom:10px;">
+              <label style="display:flex; align-items:center; gap:6px; font-weight:normal; margin:0;"><input type="checkbox" class="qtype" value="multiple-choice" checked /> <span data-i18n="qtype.mcq">Multiple choice</span></label>
+              <label style="display:flex; align-items:center; gap:6px; font-weight:normal; margin:0;"><input type="checkbox" class="qtype" value="short-answer" /> <span data-i18n="qtype.short">Short answer</span></label>
+              <label style="display:flex; align-items:center; gap:6px; font-weight:normal; margin:0;"><input type="checkbox" class="qtype" value="essay" /> <span data-i18n="qtype.essay">Essay</span></label>
+            </div>
+
             <label data-i18n="form.bloomDist">Bloom distribution</label>
             <select id="bloomDist">
               <option value="balanced" data-i18n="opt.balanced">Balanced</option>
               <option value="foundational" data-i18n="opt.foundational">Foundational</option>
               <option value="advanced" data-i18n="opt.advanced">Advanced</option>
+            </select>
+
+            <label data-i18n="form.paperType">Paper type</label>
+            <select id="paperType">
+              <option value="mixed" selected data-i18n="opt.mixed">Mixed (sab types)</option>
+              <option value="mcq" data-i18n="opt.mcq">MCQ-only</option>
+              <option value="subjective" data-i18n="opt.subjective">Subjective</option>
             </select>
 
             <div class="actions">
@@ -720,8 +734,12 @@ const I18N = {
     'form.totalQuestions': 'Total questions',
     'form.difficulty': 'Difficulty',
     'form.bloomDist': 'Bloom distribution',
+    'form.paperType': 'Paper type',
+    'form.questionTypes': 'Question types (generate)',
+    'qtype.mcq': 'Multiple choice', 'qtype.short': 'Short answer', 'qtype.essay': 'Essay',
     'opt.easy': 'Easy', 'opt.medium': 'Medium', 'opt.hard': 'Hard',
     'opt.balanced': 'Balanced', 'opt.foundational': 'Foundational', 'opt.advanced': 'Advanced',
+    'opt.mixed': 'Mixed (all types)', 'opt.mcq': 'MCQ-only', 'opt.subjective': 'Subjective',
     'btn.genQuestions': '1. Generate questions (AI)',
     'btn.buildPaper': '2. Build paper from bank',
     'btn.toExport': 'Export & results →',
@@ -808,8 +826,12 @@ const I18N = {
     'form.totalQuestions': 'کل سوالات',
     'form.difficulty': 'دشواری',
     'form.bloomDist': 'بلوم تقسیم',
+    'form.paperType': 'پرچہ کی قسم',
+    'form.questionTypes': 'سوالات کی اقسام (تخلیق)',
+    'qtype.mcq': 'کثیر الانتخابی', 'qtype.short': 'مختصر جواب', 'qtype.essay': 'مضمون',
     'opt.easy': 'آسان', 'opt.medium': 'درمیانہ', 'opt.hard': 'مشکل',
     'opt.balanced': 'متوازن', 'opt.foundational': 'بنیادی', 'opt.advanced': 'اعلیٰ',
+    'opt.mixed': 'ملا جلا (تمام اقسام)', 'opt.mcq': 'صرف MCQ', 'opt.subjective': 'موضوعی',
     'btn.genQuestions': '۱۔ سوالات بنائیں (اے آئی)',
     'btn.buildPaper': '۲۔ بینک سے پرچہ بنائیں',
     'btn.toExport': 'ایکسپورٹ اور نتائج ←',
@@ -1139,6 +1161,12 @@ async function uploadSyllabusZip() {
   }
 }
 
+function getSelectedQuestionTypes() {
+  const picked = Array.from(document.querySelectorAll('.qtype:checked')).map(c => c.value);
+  // Kuch na chuna ho to MCQ default — generation kabhi khali types se na chale.
+  return picked.length ? picked : ['multiple-choice'];
+}
+
 async function generateQuestions() {
   setStatus("AI se questions generate ho rahe hain... (kuch seconds lagenge)");
   const body = {
@@ -1147,7 +1175,7 @@ async function generateQuestions() {
     syllabus_topic_id: selectedSyllabusTopicId,
     total_questions: parseInt(val('totalQuestions')),
     bloom_distribution: val('bloomDist'),
-    question_types: ['multiple-choice'],
+    question_types: getSelectedQuestionTypes(),
     difficulty: val('difficulty')
   };
   try {
@@ -1171,7 +1199,8 @@ async function buildPaper() {
     subject: val('subject'),
     total_questions: parseInt(val('totalQuestions')),
     bloom_distribution: val('bloomDist'),
-    difficulty: val('difficulty')
+    difficulty: val('difficulty'),
+    paper_type: val('paperType')
   };
   try {
     const res = await apiFetch('/api/generate-paper', {

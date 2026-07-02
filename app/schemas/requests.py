@@ -21,6 +21,7 @@ class GeneratePaperRequest(BaseModel):
     total_questions: int = 10
     bloom_distribution: str = "balanced"
     difficulty: Optional[str] = None
+    paper_type: str = "mixed"  # mcq | mixed | subjective
 
 
 class AdaptivePaperRequest(BaseModel):

@@ -7,6 +7,15 @@ from app.repositories import papers_repository, questions_repository
 from app.schemas.requests import AdaptivePaperRequest, GeneratePaperRequest
 from app.services import adaptive_service, bloom_service, dashboard_service, item_analysis_service
 
+# paper_type -> allowed question_type values. None = koi filter nahi (sab types).
+# "subjective" ka inclusion-list rakha hai (na ke "not mcq") taake generation ki
+# vocabulary controlled rahe; naye subjective type aayein to yahan add karo.
+_PAPER_TYPE_FILTERS: dict[str, list[str] | None] = {
+    "mcq": ["multiple-choice"],
+    "subjective": ["short-answer", "essay"],
+    "mixed": None,
+}
+
 
 def assemble_balanced_paper(req: GeneratePaperRequest) -> dict | None:
     """Picks Bloom-balanced questions (least-used first), bumps their
@@ -15,7 +24,10 @@ def assemble_balanced_paper(req: GeneratePaperRequest) -> dict | None:
     distribution = bloom_service.calculate_bloom_distribution(
         req.bloom_distribution, req.total_questions
     )
-    selected_ids, selected_questions = _pick_questions(req.subject, distribution, req.difficulty)
+    question_types = _PAPER_TYPE_FILTERS.get(req.paper_type)
+    selected_ids, selected_questions = _pick_questions(
+        req.subject, distribution, req.difficulty, question_types
+    )
     if not selected_questions:
         return None
 
@@ -116,17 +128,25 @@ def replace_question(paper_id: str, old_question_id: str, new_question_id: str) 
 
 
 def _pick_questions(
-    subject: str, distribution: dict, difficulty: str | None
+    subject: str,
+    distribution: dict,
+    difficulty: str | None,
+    question_types: list[str] | None = None,
 ) -> tuple[list[str], list[dict]]:
     """Pick least-used questions per Bloom level for the given distribution,
-    bumping each picked question's usage_count. Shared by balanced + adaptive."""
+    bumping each picked question's usage_count. Shared by balanced + adaptive.
+    question_types diya jaye to sirf un types se pick hota hai (paper_type filter)."""
     selected_ids: list[str] = []
     selected_questions: list[dict] = []
     for level, count in distribution.items():
         if count <= 0:
             continue
         rows = questions_repository.find_least_used(
-            subject=subject, bloom_level=level, difficulty=difficulty, limit=count
+            subject=subject,
+            bloom_level=level,
+            difficulty=difficulty,
+            limit=count,
+            question_types=question_types,
         )
         for row in rows:
             selected_ids.append(row["id"])

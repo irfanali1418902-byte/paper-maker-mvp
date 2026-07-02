@@ -41,8 +41,15 @@ def insert(question_row: dict) -> None:
     conn.close()
 
 
-def find_least_used(subject: str, bloom_level: str, difficulty: Optional[str], limit: int) -> list:
-    """Returns N matching questions ordered by usage_count ASC (least-used first)."""
+def find_least_used(
+    subject: str,
+    bloom_level: str,
+    difficulty: Optional[str],
+    limit: int,
+    question_types: Optional[list] = None,
+) -> list:
+    """Returns N matching questions ordered by usage_count ASC (least-used first).
+    question_types diya jaye to sirf un types ke questions (IN filter)."""
     conn = get_connection()
     cur = conn.cursor()
     query = "SELECT * FROM questions WHERE subject = ? AND bloom_level = ?"
@@ -50,6 +57,10 @@ def find_least_used(subject: str, bloom_level: str, difficulty: Optional[str], l
     if difficulty:
         query += " AND difficulty = ?"
         params.append(difficulty)
+    if question_types:
+        placeholders = ",".join("?" for _ in question_types)
+        query += f" AND question_type IN ({placeholders})"
+        params.extend(question_types)
     query += " ORDER BY usage_count ASC LIMIT ?"
     params.append(limit)
     rows = cur.execute(query, params).fetchall()

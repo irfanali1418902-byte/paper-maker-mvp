@@ -22,6 +22,14 @@ def generate_paper(req: GeneratePaperRequest):
             status_code=500, detail=f"Paper assemble fail hui (DB error): {e}"
         ) from e
     if result is None:
+        if req.paper_type != "mixed":
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    f"Is subject mein '{req.paper_type}' type ke kaafi questions nahi. "
+                    "Generate karte waqt woh question type chuno, ya 'Mixed' use karo."
+                ),
+            )
         raise HTTPException(
             status_code=404,
             detail="Is subject/Bloom-level ke liye question bank khali hai. Pehle /api/generate-questions se questions banayen.",
