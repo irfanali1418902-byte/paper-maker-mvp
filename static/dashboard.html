@@ -273,6 +273,7 @@
   </div>
 </div>
 
+<script src="/apiClient.js"></script>
 <script>
 // Canonical Bloom order (lowest → highest cognitive level) for stable display.
 const BLOOM_ORDER = ["REMEMBER", "UNDERSTAND", "APPLY", "ANALYZE", "EVALUATE", "CREATE"];
@@ -423,7 +424,7 @@ async function loadLatest() {
   setStatus("Dashboard load ho raha hai...", "");
 
   try {
-    const res = await fetch(`/api/paper/${encodeURIComponent(paperId)}/dashboard`);
+    const res = await apiFetch(`/api/paper/${encodeURIComponent(paperId)}/dashboard`);
     if (res.status === 404) {
       // Paper hai hi nahi, ya hai par abhi koi result upload nahi hua — dono
       // surat mein teacher ko yehi karna hai: pehle CSV upload karo.
@@ -445,7 +446,7 @@ async function loadLatest() {
 
 // Fetch all uploads for the paper and select the one currently shown.
 async function populateUploadPicker(paperId, selectedUploadId) {
-  const res = await fetch(`/api/paper/${encodeURIComponent(paperId)}/uploads`);
+  const res = await apiFetch(`/api/paper/${encodeURIComponent(paperId)}/uploads`);
   if (!res.ok) return; // dashboard already loaded; picker is a nicety
   const data = await res.json();
   const select = document.getElementById("uploadSelect");
@@ -464,7 +465,7 @@ async function onUploadChange() {
   const uploadId = document.getElementById("uploadSelect").value;
   setStatus("Upload switch ho raha hai...", "");
   try {
-    const res = await fetch(`/api/upload/${encodeURIComponent(uploadId)}/dashboard`);
+    const res = await apiFetch(`/api/upload/${encodeURIComponent(uploadId)}/dashboard`);
     if (!res.ok) throw new Error(await readError(res));
     render(await res.json());
     setStatus("", "ok");
