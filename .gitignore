@@ -22,3 +22,6 @@ paper-maker-claude-setup/
 
 # Design reference (mockups/tokens, not application code)
 parcha-design/
+
+# Local archives / backups — not source
+*.zip
