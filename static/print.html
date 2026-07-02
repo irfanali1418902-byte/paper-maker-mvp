@@ -171,6 +171,7 @@
   </div>
 </main>
 
+<script src="/apiClient.js"></script>
 <script>
 function getParam(name) {
   return new URLSearchParams(window.location.search).get(name);
@@ -189,8 +190,8 @@ async function loadPaper() {
 
   try {
     const [paperRes, settingsRes] = await Promise.all([
-      fetch(`/api/paper/${paperId}`),
-      fetch('/api/school-settings'),
+      apiFetch(`/api/paper/${paperId}`),
+      apiFetch('/api/school-settings'),
     ]);
 
     if (!paperRes.ok) throw new Error('Paper nahi mila.');

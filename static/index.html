@@ -681,6 +681,7 @@
   </div>
 </div>
 
+<script src="/apiClient.js"></script>
 <script>
 let logoBase64 = null;
 let currentPaperId = null;
@@ -947,7 +948,7 @@ async function saveSchoolSettings() {
     accent_color: val('accentColor'),
   };
   try {
-    const res = await fetch('/api/school-settings', {
+    const res = await apiFetch('/api/school-settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -962,7 +963,7 @@ async function saveSchoolSettings() {
 
 async function loadSchoolSettings() {
   try {
-    const res = await fetch('/api/school-settings');
+    const res = await apiFetch('/api/school-settings');
     const s = await res.json();
     document.getElementById('schoolNameEn').value = s.school_name || '';
     document.getElementById('schoolNameUr').value = s.school_name_ur || '';
@@ -1002,7 +1003,7 @@ loadSchoolSettings();
 
 async function loadSyllabusGrades() {
   try {
-    const res = await fetch('/api/syllabus-grades');
+    const res = await apiFetch('/api/syllabus-grades');
     const grades = await res.json();
     const select = document.getElementById('syllabusGrade');
     select.innerHTML = '<option value="">-- Manual entry (upar wale fields use karen) --</option>';
@@ -1032,7 +1033,7 @@ async function onGradeChange() {
   document.getElementById('subject').value = subject;
   syncPaperSummary();
 
-  const res = await fetch(`/api/syllabus-topics?subject=${encodeURIComponent(subject)}&grade=${encodeURIComponent(grade)}`);
+  const res = await apiFetch(`/api/syllabus-topics?subject=${encodeURIComponent(subject)}&grade=${encodeURIComponent(grade)}`);
   const topics = await res.json();
   topicSelect.innerHTML = '<option value="">-- Manual entry (upar wale fields use karen) --</option>';
   topics.forEach(t => {
@@ -1080,7 +1081,7 @@ async function uploadSyllabusPdf() {
   formData.append('grade', grade);
   formData.append('file', file);
   try {
-    const res = await fetch('/api/syllabus/upload-pdf', { method: 'POST', body: formData });
+    const res = await apiFetch('/api/syllabus/upload-pdf', { method: 'POST', body: formData });
     const data = await res.json();
     if (!res.ok) {
       const detail = Array.isArray(data.detail) ? JSON.stringify(data.detail) : (data.detail || 'Error');
@@ -1117,7 +1118,7 @@ async function uploadSyllabusZip() {
   formData.append('grade', grade);
   formData.append('file', file);
   try {
-    const res = await fetch('/api/syllabus/upload-zip', { method: 'POST', body: formData });
+    const res = await apiFetch('/api/syllabus/upload-zip', { method: 'POST', body: formData });
     const data = await res.json();
     if (!res.ok) {
       const detail = Array.isArray(data.detail) ? JSON.stringify(data.detail) : (data.detail || 'Error');
@@ -1150,7 +1151,7 @@ async function generateQuestions() {
     difficulty: val('difficulty')
   };
   try {
-    const res = await fetch('/api/generate-questions', {
+    const res = await apiFetch('/api/generate-questions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
@@ -1173,7 +1174,7 @@ async function buildPaper() {
     difficulty: val('difficulty')
   };
   try {
-    const res = await fetch('/api/generate-paper', {
+    const res = await apiFetch('/api/generate-paper', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
@@ -1209,7 +1210,7 @@ async function buildAdaptivePaper() {
     difficulty: val('difficulty'),
   };
   try {
-    const res = await fetch('/api/generate-adaptive-paper', {
+    const res = await apiFetch('/api/generate-adaptive-paper', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -1357,7 +1358,7 @@ function renderBalanceSummary(summary) {
 async function downloadResultCSV() {
   if (!currentPaperId) { setStatus('Pehle paper banayein.'); return; }
   const url = `/api/paper/${currentPaperId}/result-template`;
-  const res = await fetch(url);
+  const res = await apiFetch(url);
   if (!res.ok) { setStatus('CSV download fail hui.'); return; }
   const blob = await res.blob();
   const a = document.createElement('a');
@@ -1375,7 +1376,7 @@ async function uploadResultCSV(input) {
   const formData = new FormData();
   formData.append('file', file);
   try {
-    const res = await fetch(`/api/paper/${currentPaperId}/upload-results`, {
+    const res = await apiFetch(`/api/paper/${currentPaperId}/upload-results`, {
       method: 'POST',
       body: formData,
     });
@@ -1432,7 +1433,7 @@ async function loadAnalytics() {
   document.getElementById('anUploadPicker').style.display = 'none';
   anStatus('Analytics load ho rahi hai...');
   try {
-    const res = await fetch(`/api/paper/${encodeURIComponent(paperId)}/dashboard`);
+    const res = await apiFetch(`/api/paper/${encodeURIComponent(paperId)}/dashboard`);
     if (!res.ok) { anStatus('⚠️ ' + await anReadError(res), 'err'); return; }
     const data = await res.json();
     renderAnalytics(data);
@@ -1446,7 +1447,7 @@ async function loadAnalytics() {
 // Show an upload switcher only when a paper has more than one results upload.
 async function anLoadUploadPicker(paperId, currentUploadId) {
   try {
-    const res = await fetch(`/api/paper/${encodeURIComponent(paperId)}/uploads`);
+    const res = await apiFetch(`/api/paper/${encodeURIComponent(paperId)}/uploads`);
     if (!res.ok) return;
     const uploads = (await res.json()).uploads || [];
     if (uploads.length <= 1) return;
@@ -1465,7 +1466,7 @@ async function onAnUploadChange() {
   if (!uploadId) return;
   anStatus('Upload load ho raha hai...');
   try {
-    const res = await fetch(`/api/upload/${encodeURIComponent(uploadId)}/dashboard`);
+    const res = await apiFetch(`/api/upload/${encodeURIComponent(uploadId)}/dashboard`);
     if (!res.ok) { anStatus('⚠️ ' + await anReadError(res), 'err'); return; }
     renderAnalytics(await res.json());
     anStatus('');
@@ -1612,7 +1613,7 @@ async function openReplaceModal(qid) {
   document.getElementById('replaceModal').dataset.open = '1';
   try {
     const url = `/api/questions?subject=${encodeURIComponent(q.subject)}&topic=${encodeURIComponent(q.topic)}&bloom_level=${encodeURIComponent(q.bloom_level)}`;
-    const res = await fetch(url);
+    const res = await apiFetch(url);
     const all = res.ok ? await res.json() : [];
     // Exclude questions already in this paper.
     const inPaper = new Set(currentPaperData.questions.map(x => x.id));
@@ -1646,7 +1647,7 @@ function renderCandidates(list) {
 async function selectReplacement(newId) {
   if (!currentPaperId || !replacingQid) return;
   try {
-    const res = await fetch(`/api/paper/${currentPaperId}/replace-question`, {
+    const res = await apiFetch(`/api/paper/${currentPaperId}/replace-question`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ old_question_id: replacingQid, new_question_id: newId }),
@@ -1672,7 +1673,7 @@ function closeReplaceModal() {
 // ===== Home quick stats =====
 async function loadQuickStats() {
   try {
-    const res = await fetch('/api/stats');
+    const res = await apiFetch('/api/stats');
     if (!res.ok) return;        // stats are non-critical — fail quietly
     quickStatsData = await res.json();
     renderQuickStats(quickStatsData);
