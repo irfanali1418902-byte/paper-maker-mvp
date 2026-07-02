@@ -435,6 +435,13 @@
               </div>
             </div>
 
+            <label data-i18n="form.questionTypes">Question types (generate)</label>
+            <div style="display:flex; gap:18px; flex-wrap:wrap; margin-bottom:10px;">
+              <label style="display:flex; align-items:center; gap:6px; font-weight:normal; margin:0;"><input type="checkbox" class="qtype" value="multiple-choice" checked /> <span data-i18n="qtype.mcq">Multiple choice</span></label>
+              <label style="display:flex; align-items:center; gap:6px; font-weight:normal; margin:0;"><input type="checkbox" class="qtype" value="short-answer" /> <span data-i18n="qtype.short">Short answer</span></label>
+              <label style="display:flex; align-items:center; gap:6px; font-weight:normal; margin:0;"><input type="checkbox" class="qtype" value="essay" /> <span data-i18n="qtype.essay">Essay</span></label>
+            </div>
+
             <label data-i18n="form.bloomDist">Bloom distribution</label>
             <select id="bloomDist">
               <option value="balanced" data-i18n="opt.balanced">Balanced</option>
@@ -728,6 +735,8 @@ const I18N = {
     'form.difficulty': 'Difficulty',
     'form.bloomDist': 'Bloom distribution',
     'form.paperType': 'Paper type',
+    'form.questionTypes': 'Question types (generate)',
+    'qtype.mcq': 'Multiple choice', 'qtype.short': 'Short answer', 'qtype.essay': 'Essay',
     'opt.easy': 'Easy', 'opt.medium': 'Medium', 'opt.hard': 'Hard',
     'opt.balanced': 'Balanced', 'opt.foundational': 'Foundational', 'opt.advanced': 'Advanced',
     'opt.mixed': 'Mixed (all types)', 'opt.mcq': 'MCQ-only', 'opt.subjective': 'Subjective',
@@ -818,6 +827,8 @@ const I18N = {
     'form.difficulty': 'دشواری',
     'form.bloomDist': 'بلوم تقسیم',
     'form.paperType': 'پرچہ کی قسم',
+    'form.questionTypes': 'سوالات کی اقسام (تخلیق)',
+    'qtype.mcq': 'کثیر الانتخابی', 'qtype.short': 'مختصر جواب', 'qtype.essay': 'مضمون',
     'opt.easy': 'آسان', 'opt.medium': 'درمیانہ', 'opt.hard': 'مشکل',
     'opt.balanced': 'متوازن', 'opt.foundational': 'بنیادی', 'opt.advanced': 'اعلیٰ',
     'opt.mixed': 'ملا جلا (تمام اقسام)', 'opt.mcq': 'صرف MCQ', 'opt.subjective': 'موضوعی',
@@ -1150,6 +1161,12 @@ async function uploadSyllabusZip() {
   }
 }
 
+function getSelectedQuestionTypes() {
+  const picked = Array.from(document.querySelectorAll('.qtype:checked')).map(c => c.value);
+  // Kuch na chuna ho to MCQ default — generation kabhi khali types se na chale.
+  return picked.length ? picked : ['multiple-choice'];
+}
+
 async function generateQuestions() {
   setStatus("AI se questions generate ho rahe hain... (kuch seconds lagenge)");
   const body = {
@@ -1158,7 +1175,7 @@ async function generateQuestions() {
     syllabus_topic_id: selectedSyllabusTopicId,
     total_questions: parseInt(val('totalQuestions')),
     bloom_distribution: val('bloomDist'),
-    question_types: ['multiple-choice'],
+    question_types: getSelectedQuestionTypes(),
     difficulty: val('difficulty')
   };
   try {

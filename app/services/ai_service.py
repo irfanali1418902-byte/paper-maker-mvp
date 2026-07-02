@@ -90,6 +90,7 @@ INSTRUCTIONS:
 1. Every question must be written in BOTH English and proper Urdu script (not Roman Urdu).
 2. Tag every question with its correct Bloom level from: REMEMBER, UNDERSTAND, APPLY, ANALYZE, EVALUATE, CREATE. Each question's cognitive depth must match the DIFFICULTY CALIBRATION above while still honouring the requested Bloom distribution counts.
 3. For multiple-choice questions, include exactly 4 options (English and Urdu) with one correct answer.
+   For short-answer and essay questions, set "options_en" and "options_ur" to empty arrays ([]) — do NOT invent options. Put a model answer in "correct_answer_en"/"correct_answer_ur": for short-answer a concise expected answer, for essay the key points a good answer must cover.
 4. Provide a short explanation for the correct answer, in both languages.
 5. Keep language age-appropriate for school students.
 6. IMPORTANT for young learners (counting, numbers, shapes, simple objects topics): if the
@@ -116,6 +117,20 @@ RESPONSE FORMAT (JSON ONLY):
       "explanation_ur": "...",
       "visual_emoji": "🍎",
       "visual_count": 5
+    }},
+    {{
+      "bloom_level": "ANALYZE",
+      "question_type": "short-answer",
+      "question_en": "...",
+      "question_ur": "...",
+      "options_en": [],
+      "options_ur": [],
+      "correct_answer_en": "model answer...",
+      "correct_answer_ur": "نمونہ جواب...",
+      "explanation_en": "...",
+      "explanation_ur": "...",
+      "visual_emoji": null,
+      "visual_count": null
     }}
   ]
 }}"""

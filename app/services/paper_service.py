@@ -12,7 +12,7 @@ from app.services import adaptive_service, bloom_service, dashboard_service, ite
 # vocabulary controlled rahe; naye subjective type aayein to yahan add karo.
 _PAPER_TYPE_FILTERS: dict[str, list[str] | None] = {
     "mcq": ["multiple-choice"],
-    "subjective": ["short-answer", "long-answer", "essay"],
+    "subjective": ["short-answer", "essay"],
     "mixed": None,
 }
 

@@ -304,6 +304,50 @@ def test_generate_questions_missing_subject_400(client):
     assert r.status_code == 400
 
 
+def test_generate_subjective_then_build_subjective_paper(client, monkeypatch):
+    # Full loop: AI se short-answer questions generate -> subjective paper assemble.
+    from app.services import ai_service
+
+    def fake_ai(**kw):
+        return [
+            {
+                "bloom_level": lvl,
+                "question_type": "short-answer",
+                "question_en": "Explain...",
+                "question_ur": "وضاحت کریں",
+                "options_en": [],
+                "options_ur": [],
+                "correct_answer_en": "model answer",
+                "correct_answer_ur": "نمونہ جواب",
+                "explanation_en": "",
+                "explanation_ur": "",
+                "visual_emoji": None,
+                "visual_count": None,
+            }
+            for lvl in BLOOM_LEVELS
+        ]
+
+    monkeypatch.setattr(ai_service, "generate_questions_from_ai", fake_ai)
+
+    gen = client.post(
+        "/api/generate-questions",
+        json={
+            "subject": "Mathematics",
+            "topic": "Fractions",
+            "total_questions": 6,
+            "question_types": ["short-answer"],
+        },
+    )
+    assert gen.status_code == 200 and gen.json()["saved_count"] == 6
+
+    paper = client.post(
+        "/api/generate-paper",
+        json={"subject": "Mathematics", "total_questions": 6, "paper_type": "subjective"},
+    )
+    assert paper.status_code == 200
+    assert all(q["question_type"] == "short-answer" for q in paper.json()["questions"])
+
+
 # ---- API-key auth -----------------------------------------------------------
 # Default test env mein PAPER_MAKER_API_KEY unset hai -> auth OFF, is liye upar
 # ke saare tests bina header ke pass hote hain. Yahan key set karke enforce-mode
