@@ -249,3 +249,47 @@ def test_generate_questions_ai_mocked(client, monkeypatch):
 def test_generate_questions_missing_subject_400(client):
     r = client.post("/api/generate-questions", json={"subject": "", "topic": ""})
     assert r.status_code == 400
+
+
+# ---- API-key auth -----------------------------------------------------------
+# Default test env mein PAPER_MAKER_API_KEY unset hai -> auth OFF, is liye upar
+# ke saare tests bina header ke pass hote hain. Yahan key set karke enforce-mode
+# ka behaviour lock karte hain.
+
+
+def test_auth_disabled_when_key_unset(client, monkeypatch):
+    from app.api import auth
+
+    monkeypatch.setattr(auth, "API_KEY", "")
+    assert client.get("/api/stats").status_code == 200
+
+
+def test_auth_rejects_missing_key(client, monkeypatch):
+    from app.api import auth
+
+    monkeypatch.setattr(auth, "API_KEY", "secret-key")
+    assert client.get("/api/stats").status_code == 401
+
+
+def test_auth_rejects_wrong_key(client, monkeypatch):
+    from app.api import auth
+
+    monkeypatch.setattr(auth, "API_KEY", "secret-key")
+    r = client.get("/api/stats", headers={"x-api-key": "wrong"})
+    assert r.status_code == 401
+
+
+def test_auth_accepts_correct_key(client, monkeypatch):
+    from app.api import auth
+
+    monkeypatch.setattr(auth, "API_KEY", "secret-key")
+    r = client.get("/api/stats", headers={"x-api-key": "secret-key"})
+    assert r.status_code == 200
+
+
+def test_static_frontend_open_without_key(client, monkeypatch):
+    # Frontend HTML bina key ke load hona chahiye, warna UI hi na khule.
+    from app.api import auth
+
+    monkeypatch.setattr(auth, "API_KEY", "secret-key")
+    assert client.get("/index.html").status_code == 200
