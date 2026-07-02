@@ -185,6 +185,101 @@ def test_paper_type_defaults_to_mixed(client):
     assert r.status_code == 200
 
 
+# ---- paper_type == custom-ratio (MCQ vs Subjective %) ----------------------
+
+_MCQ_TYPES = {"multiple-choice", "true-false"}
+_SUBJ_TYPES = {"short-answer", "essay"}
+
+
+def test_custom_ratio_splits_by_percent(client):
+    _seed_bank()  # 12 multiple-choice
+    _seed_subjective()  # 12 short-answer
+    r = client.post(
+        "/api/generate-paper",
+        json={
+            "subject": "Mathematics",
+            "total_questions": 6,
+            "paper_type": "custom-ratio",
+            "mcq_percent": 50,
+        },
+    )
+    assert r.status_code == 200
+    qs = r.json()["questions"]
+    assert len(qs) == 6
+    assert sum(1 for q in qs if q["question_type"] in _MCQ_TYPES) == 3
+    assert sum(1 for q in qs if q["question_type"] in _SUBJ_TYPES) == 3
+
+
+def test_custom_ratio_30_70(client):
+    _seed_bank()
+    _seed_subjective()
+    r = client.post(
+        "/api/generate-paper",
+        json={
+            "subject": "Mathematics",
+            "total_questions": 10,
+            "paper_type": "custom-ratio",
+            "mcq_percent": 30,
+        },
+    )
+    assert r.status_code == 200
+    qs = r.json()["questions"]
+    assert sum(1 for q in qs if q["question_type"] in _MCQ_TYPES) == 3
+    assert sum(1 for q in qs if q["question_type"] in _SUBJ_TYPES) == 7
+
+
+def test_custom_ratio_100_all_mcq(client):
+    _seed_bank()  # MCQ only; subjective group not needed at 100%
+    r = client.post(
+        "/api/generate-paper",
+        json={
+            "subject": "Mathematics",
+            "total_questions": 5,
+            "paper_type": "custom-ratio",
+            "mcq_percent": 100,
+        },
+    )
+    assert r.status_code == 200
+    assert all(q["question_type"] in _MCQ_TYPES for q in r.json()["questions"])
+
+
+def test_custom_ratio_guard_missing_subjective_404(client):
+    _seed_bank()  # MCQ-only bank; 50% needs subjective -> group empty
+    r = client.post(
+        "/api/generate-paper",
+        json={
+            "subject": "Mathematics",
+            "total_questions": 6,
+            "paper_type": "custom-ratio",
+            "mcq_percent": 50,
+        },
+    )
+    assert r.status_code == 404
+    assert "Subjective" in r.json()["detail"]
+
+
+def test_custom_ratio_missing_percent_400(client):
+    _seed_bank()
+    r = client.post(
+        "/api/generate-paper",
+        json={"subject": "Mathematics", "total_questions": 6, "paper_type": "custom-ratio"},
+    )
+    assert r.status_code == 400
+
+
+def test_custom_ratio_percent_out_of_range_422(client):
+    r = client.post(
+        "/api/generate-paper",
+        json={
+            "subject": "Mathematics",
+            "total_questions": 6,
+            "paper_type": "custom-ratio",
+            "mcq_percent": 150,
+        },
+    )
+    assert r.status_code == 422
+
+
 # ---- /api/paper/{id} --------------------------------------------------------
 
 

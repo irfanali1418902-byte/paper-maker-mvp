@@ -36,6 +36,14 @@ class DuplicateSyllabusTopic(Exception):
     touch sqlite3 directly (CLAUDE.md §2)."""
 
 
+class QuestionBankEmpty(Exception):
+    """Raised by paper_service when a requested question group can't be filled
+    because the bank has no questions of that kind (e.g. a custom-ratio paper
+    asks for subjective questions but only MCQs exist). The message is already
+    user-facing and names the missing group, so the route surfaces it straight
+    to the teacher as a 404 (CLAUDE.md §2)."""
+
+
 class PdfConversionFailed(Exception):
     """Raised by export_service when the docx->PDF step fails — typically
     because LibreOffice (soffice) isn't installed/found on the server, or the

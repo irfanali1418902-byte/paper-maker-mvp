@@ -5,7 +5,7 @@ from fastapi import APIRouter, File, HTTPException, Response, UploadFile
 from app.schemas.requests import AdaptivePaperRequest, GeneratePaperRequest, ReplaceQuestionRequest
 from app.schemas.responses import AdaptivePaperResponse, GeneratePaperResponse, PaperResponse
 from app.services import paper_service, result_service
-from app.services.exceptions import ResultsValidationError
+from app.services.exceptions import QuestionBankEmpty, ResultsValidationError
 
 router = APIRouter()
 
@@ -17,6 +17,12 @@ def generate_paper(req: GeneratePaperRequest):
     (taake repetition kam ho)."""
     try:
         result = paper_service.assemble_balanced_paper(req)
+    except QuestionBankEmpty as e:
+        # custom-ratio: kisi group (MCQ/Subjective) ke questions bank mein nahi.
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        # e.g. custom-ratio bina mcq_percent ke — well-formed request, bad content.
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Paper assemble fail hui (DB error): {e}"
