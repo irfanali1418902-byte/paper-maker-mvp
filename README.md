@@ -178,7 +178,7 @@ To exercise the D-index flags you need at least 10 students. Seed an engineered
 result set for an existing paper:
 
 ```bash
-python seed_large_class.py <paper_id>
+python -m scripts.seed_large_class <paper_id>
 ```
 
 ### PDF export (LibreOffice)

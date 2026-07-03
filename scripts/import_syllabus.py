@@ -2,7 +2,7 @@
 Syllabus CSV ko database mein import karne wala script.
 
 Usage:
-    python import_syllabus.py syllabus_topics_unit1_sample.csv --subject Mathematics --grade "Grade 1"
+    python -m scripts.import_syllabus tests/fixtures/syllabus_topics_unit1_sample.csv --subject Mathematics --grade "Grade 1"
 
 Aap apni khud ki books ke liye bhi CSV bana ke isi script se import kar sakte
 hain — bas wahi columns hone chahiye: unit_no,unit_title,page_range,
