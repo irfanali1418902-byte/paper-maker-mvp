@@ -67,7 +67,10 @@ def assemble_adaptive_paper(req: AdaptivePaperRequest) -> dict | None:
     breakdown = dashboard["bloom_breakdown"]
     distribution = adaptive_service.build_adaptive_distribution(breakdown, req.total_questions)
 
-    selected_ids, selected_questions = _pick_questions(subject, distribution, req.difficulty)
+    question_types = _PAPER_TYPE_FILTERS.get(req.paper_type)
+    selected_ids, selected_questions = _pick_questions(
+        subject, distribution, req.difficulty, question_types
+    )
     if not selected_questions:
         return None
 

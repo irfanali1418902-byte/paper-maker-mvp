@@ -2,7 +2,7 @@
 
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class GenerateQuestionsRequest(BaseModel):
@@ -36,6 +36,21 @@ class AdaptivePaperRequest(BaseModel):
     class_name: Optional[str] = None
     total_questions: int = 10
     difficulty: Optional[str] = None
+    # Weakness signal (Bloom) aur format choice (type) alag cheezein hain — teacher
+    # adaptive follow-up ka format chun sake. custom-ratio jaan-boojh kar allowed
+    # nahi: weakness-distribution × ratio-split ka combo abhi scope se bahar hai.
+    paper_type: str = "mixed"  # mcq | mixed | subjective
+
+    @field_validator("paper_type")
+    @classmethod
+    def _reject_ratio_for_adaptive(cls, v: str) -> str:
+        allowed = {"mcq", "mixed", "subjective"}
+        if v not in allowed:
+            raise ValueError(
+                "Adaptive paper ke liye paper_type sirf mcq, mixed, ya subjective ho sakta hai "
+                "(custom-ratio adaptive mein support nahi)."
+            )
+        return v
 
 
 class ReplaceQuestionRequest(BaseModel):

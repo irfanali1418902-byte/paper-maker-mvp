@@ -443,6 +443,105 @@ def test_generate_subjective_then_build_subjective_paper(client, monkeypatch):
     assert all(q["question_type"] == "short-answer" for q in paper.json()["questions"])
 
 
+# ---- /api/generate-adaptive-paper — paper_type filter (R3) ------------------
+# Adaptive assembly ka type-filter test karte hain. Poora results-upload pipeline
+# drag karne ki bajaye dashboard ko stub karte hain — R3 sirf "type filter apply
+# hota hai ya nahi" ke baare mein hai, weakness kaise compute hui uska nahi.
+
+_ADAPTIVE_BREAKDOWN = [
+    {"bloom_level": lvl, "average_percent": pct}
+    for lvl, pct in zip(BLOOM_LEVELS, [30.0, 45.0, 55.0, 60.0, 70.0, 80.0], strict=True)
+]
+
+
+def _seed_typed(qtype, n=2):
+    for lvl in BLOOM_LEVELS:
+        for _ in range(n):
+            _insert_question(bloom=lvl, qtype=qtype)
+
+
+def _make_source_paper():
+    from app.repositories import papers_repository
+
+    papers_repository.insert(
+        paper_id="src-paper",
+        subject="Mathematics",
+        class_name="Grade 5",
+        total_marks=0,
+        question_ids=[],
+    )
+    return "src-paper"
+
+
+def _stub_dashboard(monkeypatch):
+    from app.services import dashboard_service
+
+    monkeypatch.setattr(
+        dashboard_service,
+        "get_latest_dashboard_for_paper",
+        lambda paper_id: {"bloom_breakdown": _ADAPTIVE_BREAKDOWN},
+    )
+
+
+def test_adaptive_paper_type_mcq_only(client, monkeypatch):
+    # Bank mein MCQ + subjective dono; mcq filter ke baad sirf MCQ aane chahiye.
+    _seed_typed("multiple-choice")
+    _seed_typed("short-answer")
+    source_id = _make_source_paper()
+    _stub_dashboard(monkeypatch)
+
+    r = client.post(
+        "/api/generate-adaptive-paper",
+        json={"source_paper_id": source_id, "paper_type": "mcq", "total_questions": 6},
+    )
+    assert r.status_code == 200
+    questions = r.json()["questions"]
+    assert questions
+    assert all(q["question_type"] == "multiple-choice" for q in questions)
+
+
+def test_adaptive_paper_type_subjective_only(client, monkeypatch):
+    _seed_typed("multiple-choice")
+    _seed_typed("short-answer")
+    source_id = _make_source_paper()
+    _stub_dashboard(monkeypatch)
+
+    r = client.post(
+        "/api/generate-adaptive-paper",
+        json={"source_paper_id": source_id, "paper_type": "subjective", "total_questions": 6},
+    )
+    assert r.status_code == 200
+    questions = r.json()["questions"]
+    assert questions
+    assert all(q["question_type"] in ("short-answer", "essay") for q in questions)
+
+
+def test_adaptive_default_mixed_allows_all_types(client, monkeypatch):
+    # Back-compat: paper_type diye bina purana behavior — koi type filter nahi.
+    # Bank sirf subjective; default "mixed" ko wahi laut aane chahiye (agar galti se
+    # MCQ-only default hota to bank khali lagta aur 404 milta).
+    _seed_typed("short-answer")
+    source_id = _make_source_paper()
+    _stub_dashboard(monkeypatch)
+
+    r = client.post(
+        "/api/generate-adaptive-paper",
+        json={"source_paper_id": source_id, "total_questions": 6},
+    )
+    assert r.status_code == 200
+    questions = r.json()["questions"]
+    assert questions
+    assert all(q["question_type"] == "short-answer" for q in questions)
+
+
+def test_adaptive_rejects_custom_ratio_422(client):
+    r = client.post(
+        "/api/generate-adaptive-paper",
+        json={"source_paper_id": "whatever", "paper_type": "custom-ratio"},
+    )
+    assert r.status_code == 422
+
+
 # ---- API-key auth -----------------------------------------------------------
 # Default test env mein PAPER_MAKER_API_KEY unset hai -> auth OFF, is liye upar
 # ke saare tests bina header ke pass hote hain. Yahan key set karke enforce-mode
