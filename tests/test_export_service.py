@@ -3,6 +3,11 @@
 The actual PDF rendering needs LibreOffice installed, which CI/dev machines
 may lack; we test the conversion's contract (404 passthrough, missing-binary
 error) by stubbing the binary lookup rather than shelling out.
+
+Content assertions here check the rendered .docx actually carries EN + UR
+question text, MCQ options, and the total marks value. Section-heading content
+is intentionally not covered — sections mode isn't built yet (see ROADMAP §C);
+add those assertions when that feature lands.
 """
 
 import io
@@ -124,6 +129,36 @@ def test_docx_handles_question_with_no_options(test_db):
     _setup_paper(test_db)
     doc = Document(io.BytesIO(export_service.build_paper_docx("p1")))
     assert "Name three plants." in _all_text(doc)
+
+
+def test_docx_contains_urdu_question_text(test_db):
+    """Urdu question strings must appear in the rendered text, not just the
+    rtl/bidi XML flags — a paper with LTR-laid-out or missing Urdu is broken."""
+    _setup_paper(test_db)
+    text = _all_text(Document(io.BytesIO(export_service.build_paper_docx("p1"))))
+    assert "ضوئی تالیف کیا ہے؟" in text  # q1 (MCQ)
+    assert "تین پودوں کے نام لکھیں۔" in text  # q2 (no options)
+
+
+def test_docx_contains_urdu_instruction_line(test_db):
+    _setup_paper(test_db)
+    text = _all_text(Document(io.BytesIO(export_service.build_paper_docx("p1"))))
+    assert "تمام سوالات کے جواب دیں۔" in text
+
+
+def test_docx_contains_option_text_en_and_ur(test_db):
+    """MCQ options render in both languages inside the two-column grid."""
+    _setup_paper(test_db)
+    text = _all_text(Document(io.BytesIO(export_service.build_paper_docx("p1"))))
+    assert "Light" in text and "Water" in text  # options_en
+    assert "روشنی" in text and "پانی" in text  # options_ur
+
+
+def test_docx_meta_shows_total_marks_value(test_db):
+    """The meta block prints the actual total (7), not just the label."""
+    _setup_paper(test_db)
+    text = _all_text(Document(io.BytesIO(export_service.build_paper_docx("p1"))))
+    assert "کل نمبر: 7" in text  # "Total Marks / کل نمبر: {total_marks}"
 
 
 def test_docx_survives_corrupt_logo(test_db):
