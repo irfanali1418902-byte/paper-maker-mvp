@@ -31,9 +31,10 @@ paper-maker-mvp/
 │   ├── core/database.py # Connection factory + schema bootstrap + migrations
 │   └── schemas/         # Pydantic request + response shapes
 ├── static/              # index.html (paper maker + adaptive) + dashboard.html
-├── tests/               # pytest suite
-├── import_syllabus.py   # CLI: syllabus CSV import
-├── seed_large_class.py  # CLI: engineered results seed (D-index flags test)
+├── tests/               # pytest suite (+ fixtures/ sample CSVs)
+├── scripts/             # CLI tools (run as `python -m scripts.<name>`):
+│   ├── import_syllabus.py    # syllabus CSV import
+│   └── seed_large_class.py   # engineered results seed (D-index flags test)
 ├── requirements.txt     # Python dependencies
 ├── ARCHITECTURE.md      # layering contract
 ├── CLAUDE.md            # coding conventions (Claude Code auto-loads)
@@ -69,7 +70,7 @@ paper-maker-mvp/
 - `POST /api/generate-adaptive-paper` — source paper ke latest results se seekhta hai
 - Response mein `adaptive_summary` (per-level weakness → questions allocated)
 - Logic in `app/services/adaptive_service.py` (pure, no DB changes)
-- `seed_large_class.py` — reproducible test data (≥10 students) for D-index flags
+- `scripts/seed_large_class.py` — reproducible test data (≥10 students) for D-index flags
 - 128/128 pytest passing
 
 ## NEXT TASKS (Priority Order)

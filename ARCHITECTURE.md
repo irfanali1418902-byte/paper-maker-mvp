@@ -92,7 +92,7 @@ don't make an exception.
 5. **Dependencies point down.** Lower layers never import upper ones.
 6. **One service call per route.** If two services must cooperate, that
    orchestration is itself a service — name it and put it in `app/services/`.
-7. **CLI scripts obey the same rules.** `import_syllabus.py`, `seed_large_class.py`
+7. **CLI scripts obey the same rules.** `scripts/import_syllabus.py`, `scripts/seed_large_class.py`
    and any future scripts call services, not raw SQL. A CLI is just another
    transport above services.
 
@@ -153,8 +153,10 @@ paper-maker-mvp/
 │   ├── dashboard.html          # result analyzer dashboard
 │   └── print.html              # printable paper layout (mirrored by .docx export)
 ├── tests/                      # pytest suite (services, repos, HTTP routes)
-├── import_syllabus.py          # CLI: import syllabus topics from CSV
-├── seed_large_class.py         # CLI: seed engineered >=10-student results
+│   └── fixtures/               # sample CSVs (syllabus + happy_birds results)
+├── scripts/                    # CLI tools — run as `python -m scripts.<name>`
+│   ├── import_syllabus.py      # import syllabus topics from CSV
+│   └── seed_large_class.py     # seed engineered >=10-student results
 ├── requirements.txt
 ├── railway.toml                # Railway deploy config
 ├── pyproject.toml              # ruff + black config

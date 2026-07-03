@@ -9,7 +9,7 @@ mis-keyed question (weak students get it, strong students miss it) that
 produces a negative D and the "check your answer key" flag.
 
 Usage:
-    python seed_large_class.py <paper_id> [--students 12]
+    python -m scripts.seed_large_class <paper_id> [--students 12]
 
 It reads the paper's real per-question max marks via the service layer and
 imports through result_service — no raw SQL, same layering as the app.
