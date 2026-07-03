@@ -1334,15 +1334,15 @@ function renderQuestions(questions) {
   questions.forEach((q, i) => {
     const optsEn = JSON.parse(q.options_en || '[]');
     const optsUr = JSON.parse(q.options_ur || '[]');
-    const visual = (q.visual_emoji && q.visual_count) ? `<div style="font-size:22px;letter-spacing:4px;margin-top:6px">${q.visual_emoji.repeat(q.visual_count)}</div>` : '';
+    const visual = (q.visual_emoji && q.visual_count) ? `<div style="font-size:22px;letter-spacing:4px;margin-top:6px">${escapeHtml(q.visual_emoji.repeat(q.visual_count))}</div>` : '';
     const card = document.createElement('div');
     card.className = 'question-card';
     card.innerHTML = `
-      <div><strong>Q${i + 1}.</strong> ${q.question_en || ''}</div>
-      <div class="ur">${q.question_ur || ''}</div>
+      <div><strong>Q${i + 1}.</strong> ${escapeHtml(q.question_en || '')}</div>
+      <div class="ur">${escapeHtml(q.question_ur || '')}</div>
       ${visual}
-      <ul>${optsEn.map((o, idx) => `<li>${o}${optsUr[idx] ? ' — <span class="ur" style="font-size:15px">' + optsUr[idx] + '</span>' : ''}</li>`).join('')}</ul>
-      <div class="meta">Bloom: ${q.bloom_level} | Difficulty: ${q.difficulty} | Expected: ${expectedBadge(q)} | Marks: ${q.marks}</div>
+      <ul>${optsEn.map((o, idx) => `<li>${escapeHtml(o)}${optsUr[idx] ? ' — <span class="ur" style="font-size:15px">' + escapeHtml(optsUr[idx]) + '</span>' : ''}</li>`).join('')}</ul>
+      <div class="meta">Bloom: ${escapeHtml(q.bloom_level)} | Difficulty: ${escapeHtml(q.difficulty)} | Expected: ${expectedBadge(q)} | Marks: ${q.marks}</div>
     `;
     container.appendChild(card);
   });
@@ -1367,12 +1367,12 @@ function renderPaperPreview(data) {
     const optsEn = JSON.parse(q.options_en || '[]');
     const letters = ['(a)', '(b)', '(c)', '(d)', '(e)'];
     const opts = optsEn.length
-      ? `<div class="ph-opts">${optsEn.map((o, idx) => `<span>${letters[idx] || ''} ${o}</span>`).join('')}</div>`
+      ? `<div class="ph-opts">${optsEn.map((o, idx) => `<span>${letters[idx] || ''} ${escapeHtml(o)}</span>`).join('')}</div>`
       : '';
-    const ur = q.question_ur ? `<div class="q-ur">${q.question_ur}</div>` : '';
+    const ur = q.question_ur ? `<div class="q-ur">${escapeHtml(q.question_ur)}</div>` : '';
     const change = q.id ? `<button class="ph-change" onclick="openReplaceModal('${q.id}')">&#8635; ${t('btn.change')}</button>` : '';
     return `<div class="ph-q">
-      <div class="q-en">Q${i + 1}. ${q.question_en || ''} <span style="float:right;color:#5B6678;font-weight:400">[${q.marks} mark${q.marks == 1 ? '' : 's'}]</span></div>
+      <div class="q-en">Q${i + 1}. ${escapeHtml(q.question_en || '')} <span style="float:right;color:#5B6678;font-weight:400">[${q.marks} mark${q.marks == 1 ? '' : 's'}]</span></div>
       ${ur}
       ${opts}
       ${change}
@@ -1381,12 +1381,12 @@ function renderPaperPreview(data) {
 
   const html = `
     <div class="ph-head">
-      <div class="ph-en">${nameEn}</div>
-      ${nameUr ? `<div class="ph-ur">${nameUr}</div>` : ''}
+      <div class="ph-en">${escapeHtml(nameEn)}</div>
+      ${nameUr ? `<div class="ph-ur">${escapeHtml(nameUr)}</div>` : ''}
       <div class="ph-exam">Examination — 2026</div>
     </div>
     <div class="ph-meta">
-      <span>Subject: ${subject || '—'}</span>
+      <span>Subject: ${escapeHtml(subject) || '—'}</span>
       <span>Total marks: ${totalMarks || '—'}</span>
     </div>
     <div class="ph-sec">Questions</div>
