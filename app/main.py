@@ -18,17 +18,20 @@ from app.core.database import init_db
 app = FastAPI(title="AII Smart Paper Maker - Phase 1")
 
 # Cross-origin origins env se (comma-separated). Frontend same-origin (`/`) se
-# serve hota hai, is liye default `*` kisi ko todta nahi — par production mein
-# PAPER_MAKER_ALLOWED_ORIGINS set karke isse apni school domain tak lock karo.
+# serve hota hai, is liye default mein koi cross-origin allow NAHI karte —
+# same-origin requests ko CORS ki zaroorat nahi. Agar API ko kisi doosri domain
+# se call karna ho to PAPER_MAKER_ALLOWED_ORIGINS mein woh origins do (warna
+# wildcard `*` chhodne se koi bhi site browser se API hit kar sakti hai).
 _origins_env = os.environ.get("PAPER_MAKER_ALLOWED_ORIGINS", "").strip()
-_allowed_origins = [o.strip() for o in _origins_env.split(",") if o.strip()] or ["*"]
+_allowed_origins = [o.strip() for o in _origins_env.split(",") if o.strip()]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=_allowed_origins,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+if _allowed_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_allowed_origins,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 init_db()
 

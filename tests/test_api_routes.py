@@ -485,3 +485,46 @@ def test_static_frontend_open_without_key(client, monkeypatch):
 
     monkeypatch.setattr(auth, "API_KEY", "secret-key")
     assert client.get("/index.html").status_code == 200
+
+
+# ---- Fail-closed config guard (deploy without a key) ------------------------
+# auth_config_error() pure hai — startup par decide karta hai ke deployment par
+# key missing hone par app crash kare (silently unprotected chalne ki bajaye).
+
+
+def test_auth_config_local_dev_no_key_is_ok():
+    # Koi deploy signal nahi + key missing = local dev, koi error nahi.
+    from app.api import auth
+
+    assert auth.auth_config_error("", {}) is None
+
+
+def test_auth_config_key_present_always_ok():
+    # Key set ho to deployment par bhi sab theek.
+    from app.api import auth
+
+    assert auth.auth_config_error("real-key", {"RAILWAY_ENVIRONMENT": "production"}) is None
+
+
+def test_auth_config_deploy_marker_without_key_fails():
+    # Railway marker + key missing = fail-closed (non-None error message).
+    from app.api import auth
+
+    assert auth.auth_config_error("", {"RAILWAY_ENVIRONMENT": "production"}) is not None
+    assert auth.auth_config_error("", {"RAILWAY_SERVICE_ID": "svc-123"}) is not None
+
+
+def test_auth_config_explicit_require_flag_without_key_fails():
+    # Kisi bhi host par PAPER_MAKER_REQUIRE_API_KEY=1 => key mandatory.
+    from app.api import auth
+
+    assert auth.auth_config_error("", {"PAPER_MAKER_REQUIRE_API_KEY": "1"}) is not None
+    assert auth.auth_config_error("", {"PAPER_MAKER_REQUIRE_API_KEY": "true"}) is not None
+
+
+def test_auth_config_require_flag_falsey_is_ok():
+    # Flag "0"/"false"/empty ko deploy signal nahi maana jata.
+    from app.api import auth
+
+    assert auth.auth_config_error("", {"PAPER_MAKER_REQUIRE_API_KEY": "0"}) is None
+    assert auth.auth_config_error("", {"PAPER_MAKER_REQUIRE_API_KEY": "false"}) is None
