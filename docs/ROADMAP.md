@@ -27,9 +27,9 @@
 | # | Finding | Action |
 |---|---------|--------|
 | R1 | Prod question bank thin on subjective types | Seed prod: generate short-answer/essay sets per class/subject (guided script or checklist). |
-| R2 | Export tests don't assert content (Urdu text, marks, sections) | Add docx content assertions (TEST-PLAN T1). |
+| ~~R2~~ ✅ | ~~Export tests don't assert content (Urdu text, marks, sections)~~ | **DONE (PR #6):** docx content assertions for EN/UR question text, options, total-marks value. Sections deferred — feature not built yet. |
 | R3 | Adaptive papers ignore paper_type/ratio — undefined interaction | Decide behavior (probably: adaptive respects paper_type) → implement + test. |
-| R4 | Provider fallback (Gemini→Anthropic) untested | Mocked HTTP test (TEST-PLAN T4). |
+| ~~R4~~ ✅ | ~~Provider fallback (Gemini→Anthropic) untested~~ | **DONE (PR #6):** locked actual behavior — selection-by-priority (no runtime fallback exists); mocked-HTTP error-wrapping + no-key-leak tests. |
 
 ### P2 — Ops decision (before Railway day ~28)
 | # | Finding | Action |
