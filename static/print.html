@@ -181,6 +181,12 @@ function setVar(name, value) {
   document.documentElement.style.setProperty(name, value);
 }
 
+// Question/option text innerHTML mein jaata hai — HTML special chars escape
+// karo taake stored content markup inject na kar sake.
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 async function loadPaper() {
   const paperId = getParam('paper_id');
   if (!paperId) {
@@ -223,13 +229,13 @@ async function loadPaper() {
 
       let visualHtml = '';
       if (q.visual_emoji && q.visual_count) {
-        visualHtml = `<div class="visual-row">${q.visual_emoji.repeat(q.visual_count)}</div>`;
+        visualHtml = `<div class="visual-row">${escapeHtml(q.visual_emoji.repeat(q.visual_count))}</div>`;
       }
 
       let optsHtml = '';
       if (optsEn.length) {
         optsHtml = '<div class="options">' + optsEn.map((o, idx) => `
-          <div class="opt"><span class="circle"></span><span>${o}${optsUr[idx] ? ' / ' + optsUr[idx] : ''}</span></div>
+          <div class="opt"><span class="circle"></span><span>${escapeHtml(o)}${optsUr[idx] ? ' / ' + escapeHtml(optsUr[idx]) : ''}</span></div>
         `).join('') + '</div>';
       } else {
         optsHtml = '<div class="answer-space"></div>';
@@ -237,10 +243,10 @@ async function loadPaper() {
 
       div.innerHTML = `
         <div class="qhead">
-          <div><span class="qnum">Q${i + 1}.</span> <span class="qtext-en">${q.question_en || ''}</span></div>
+          <div><span class="qnum">Q${i + 1}.</span> <span class="qtext-en">${escapeHtml(q.question_en || '')}</span></div>
           <div class="marks">[${q.marks}]</div>
         </div>
-        <div class="qtext-ur">${q.question_ur || ''}</div>
+        <div class="qtext-ur">${escapeHtml(q.question_ur || '')}</div>
         ${visualHtml}
         ${optsHtml}
       `;
