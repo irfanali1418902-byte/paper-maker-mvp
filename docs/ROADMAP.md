@@ -28,7 +28,7 @@
 |---|---------|--------|
 | R1 | Prod question bank thin on subjective types | Seed prod: generate short-answer/essay sets per class/subject (guided script or checklist). |
 | ~~R2~~ ✅ | ~~Export tests don't assert content (Urdu text, marks, sections)~~ | **DONE (PR #6):** docx content assertions for EN/UR question text, options, total-marks value. Sections deferred — feature not built yet. |
-| R3 | Adaptive papers ignore paper_type/ratio — undefined interaction | Decide behavior (probably: adaptive respects paper_type) → implement + test. |
+| ~~R3~~ ✅ | ~~Adaptive papers ignore paper_type/ratio — undefined interaction~~ | **DONE (PR #8):** adaptive now honors `paper_type` (mcq/mixed/subjective) via the shared `_PAPER_TYPE_FILTERS`; `custom-ratio` deliberately rejected for adaptive (422 via `_reject_ratio_for_adaptive` validator) — weakness-distribution × ratio-split combo left out of scope. Tested: type filter + custom-ratio rejection. |
 | ~~R4~~ ✅ | ~~Provider fallback (Gemini→Anthropic) untested~~ | **DONE (PR #6):** locked actual behavior — selection-by-priority (no runtime fallback exists); mocked-HTTP error-wrapping + no-key-leak tests. |
 
 ### P2 — Ops decision (before Railway day ~28)
@@ -44,8 +44,9 @@
 | 2 | **Ratio Phase 2** — exact counts per type (3/4/3) | Finer control; builds on ratio v1 | S–M |
 | 3 | **Prod seeding tool** — one-click "build starter bank" per class | Removes empty-bank friction for new subjects | S |
 | 4 | **Lesson Plan module** — plans linked to topics + coverage report | Your original vision; new module, do after core is polished | L |
-| 5 | Per-student adaptive papers | Extends F10 | M |
+| 5 | Per-student adaptive papers | Extends F10; still open after R3 (adaptive is whole-class only) | M |
 | 6 | Syllabus PDF auto-extract | Convenience | M |
+| 7 | Adaptive × custom-ratio | Deferred by R3 (currently 422-rejected); needs a weakness-distribution × ratio-split design before it's safe to allow | M |
 
 ## D. Suggested Session Plan (step-by-step)
 
