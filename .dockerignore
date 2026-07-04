@@ -1,0 +1,30 @@
+# Secrets & local runtime state — image mein KABHI bake nahi karna
+.env
+.env.*
+*.db
+*.sqlite
+*.sqlite3
+
+# VCS & CI
+.git
+.github
+.gitignore
+
+# Python caches
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Dev / docs / design — runtime ko nahi chahiye (image slim rakho)
+tests/
+docs/
+parcha-design/
+paper-maker-claude-setup/
+.claude/
+.pre-commit-config.yaml
+*.md
+
+# Local archives / backups
+*.zip
