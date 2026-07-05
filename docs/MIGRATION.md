@@ -1,7 +1,56 @@
 # MIGRATION PLAN — Railway → Northflank
 
-**Status:** PLAN FINALIZED (decisions locked, §8) — no deploy/code change yet, awaiting
-"implement karo".
+> 🔴🔴 **CRITICAL CORRECTION (5 Jul 2026) — §0 premise FALSE.** Live Northflank account
+> (`northflank list plans`) par **koi free/$0 plan nahi** (20 plans, sabse sasta
+> `nf-compute-10` = $2.7/mo/256MB, realistic `nf-compute-20` = $5.4/mo/512MB). Har service
+> ko ek **paid** `billing.deploymentPlan` chahiye. Yani "free Sandbox = charge ZERO,
+> always-on" wali §0 research **ghalat/outdated** thi — Northflank ~$5-6/mo aayega. **Poore
+> migration ki wajah (Railway trial khatam → free host) yahan invalidate hoti hai.** Deploy
+> se pehle hosting faisla dobara review zaroori. Backup safe hai (kuch loss nahi). ⬇️
+>
+> **↳ DECISION (5 Jul 2026):** user ne yeh jaan-boojh kar accept kiya — **Northflank PAID
+> par migrate** karenge, plan **`nf-compute-20` (512 MB RAM, ~$5.4/mo)** (256MB `nf-compute-10`
+> app ke pandas/numpy/PyMuPDF ke liye OOM-risk). Cost Railway Hobby (~$5/mo) jaisa hi; faida =
+> Railway se independence. Free-host goal drop.
+
+**Status:** ✅ **NORTHFLANK DEPLOY LIVE & VERIFIED (5 Jul 2026).** Core migration complete —
+sab CLI (`@northflank/cli`) se. Live URL: **https://p01--paper-maker-mvp--vyztw2phrq22.code.run**
+
+**Done (§4 steps 1–9):**
+- Backup verified (4 Jul) → `_railway_backups/paper_maker_prod_20260704.db`.
+- Combined service (Dockerfile, `master` auto-deploy, port 8080 public, build SUCCESS).
+- **Volume `data-volume` BOUND** @ `/data` (nvme, **6144 MB** — NF ka minimum; 0.5GB possible nahi).
+- Plan **`nf-compute-20`** (512 MB). Env: `REQUIRE_API_KEY=1`, `DB_PATH`, rotated
+  `PAPER_MAKER_API_KEY` (file se, O/0 fixed), `GEMINI_API_KEY` (Railway se), `ALLOWED_ORIGINS`.
+- **DB restored** (`northflank upload` → `/data/paper_maker.db`) — integrity `ok`, 247 Q / 27 papers /
+  309 topics / 290 results (backup se match).
+- **Smoke PASS:** `/`→200 · `/api` no-key→401 · +key→200 · 247 questions live.
+- **Persistence PROVEN:** marker `/data` par → restart → naya container mein bhi mojood.
+
+**💰 Actual cost:** `nf-compute-20` $5.4/mo + volume 6GB × $0.30 = **~$7.2/mo** (0.5GB minimum
+6GB nikalne se ~$1.80/mo extra vs socha tha).
+
+**Baaki (§4 steps 10–11):** ⏳ URL switch (mobile app/teachers/bookmarks) → ~1 hafta dono
+chalao → phir Railway + purani API key retire. **Optional smoke:** docx export, PDF
+(expected clean `PdfConversionFailed`), adaptive paper. **Follow-up PR:** LibreOffice → PDF.
+⚠️ Tab tak `master` par push avoid (Railway Dockerfile/$PORT se fail). Railway abhi live/primary;
+kuch delete nahi hua.
+
+> ⚠️ Note (4 Jul): Railway "Deploy failed (5h 58m)" ka cause **diagnose ho gaya** —
+> latest deploy Dockerfile ka tha: **Docker build kaamyaab** (saari deps install, image
+> export), fail sirf **healthcheck** par (`service unavailable → replica never healthy`).
+> Wajah = **gotcha #3 (port)**: Railway `$PORT` inject/expect karta hai par Dockerfile
+> fixed 8080 par listen karta hai → Railway ka `$PORT` healthcheck fail. **Northflank par
+> masla nahi** (wahan 8080 khud declare hoga). **Do implications:** (a) Dockerfile cloud
+> build validate ho gaya ✅; (b) **rollback net ab fragile** — master par Dockerfile hone
+> se har Railway redeploy isi tarah fail karega; purana Nixpacks instance jab tak restart
+> na ho tab tak serve karega. Migration tak **master par push / Railway redeploy avoid
+> karo** (§7 rollback assumption weak ho gayi).
+>
+> ✅ `DB_UPLOAD_TOKEN` verify kiya — **code mein kahin use NAHI hota** (sirf ek purani
+> docs-prompt mein hypothetical zikr). Railway par ye orphan env var hai. §3b ka "koi
+> upload route nahi, manual restore" **sahi** — restore bhi backup jaisa `railway
+> ssh` + base64 se hoga (Northflank shell par).
 **Reason:** Railway trial credit ~27 din mein khatam. Card add karke bhi paisa kharch
 nahi karna. **Target = Northflank free (Sandbox)** — free limit mein charge zero.
 **Author basis:** repo @ `master` (261 tests green) · prod live & verified on Railway.
@@ -169,9 +218,15 @@ Direct dashboard upload nahi hai, to Northflank container **shell** (exec) se pu
 
 Sab reversible — **Railway delete mat karo jab tak Northflank 100% verify na ho.**
 
-1. **Backup lo (§3a).** Railway se safe `.backup` + integrity-check. Non-negotiable step 1.
-2. **Slim Dockerfile add karo (PR).** Repo root par `Dockerfile` (§2a snippet):
-   `python:3.12-slim`, `pip install -r requirements.txt`, `EXPOSE 8080`,
+1. **✅ DONE (4 Jul 2026) — Backup liya (§3a).** Railway container (`railway ssh`, sqlite3
+   CLI nahi tha → Python `sqlite3` backup API) se safe consistent `.backup` + integrity
+   `ok`. Base64-over-ssh se local download. **Local (repo se bahar):**
+   `_railway_backups/paper_maker_prod_20260704.db` · 679,936 bytes ·
+   SHA256 `30323b5c…01fffb` (container == local, byte-identical) · integrity `ok` ·
+   real data (questions 247, papers 27, syllabus_topics 309, student_question_results 290).
+   Container temp copy cleanup ho gayi; live DB untouched.
+2. **✅ DONE — Slim Dockerfile add kiya (PR #10, merged).** Repo root par `Dockerfile`
+   (§2a snippet): `python:3.12-slim`, `pip install -r requirements.txt`, `EXPOSE 8080`,
    `CMD uvicorn app.main:app --host 0.0.0.0 --port 8080`. **No LibreOffice** (PDF later).
    Local Docker nahi hai → Northflank cloud build + deployed smoke test se verify (§2a).
 3. **Northflank account.** Sign up, **card add** (mandatory; free limit mein charge nahi),
@@ -303,7 +358,14 @@ Agar Northflank par kuch bhi tootey aur fix na ho:
 7. **API key:** ✅ **Rotate** — nayi key, purani Railway retire (rollback window baad).
 8. **Auth fail-closed:** ✅ Northflank env par **`PAPER_MAKER_REQUIRE_API_KEY=1`** (code
    change nahi chahiye — flag akela kaafi).
-9. **Config-as-code:** ⏸️ Northflank template optional/later; pehle UI se set.
+9. **Config-as-code:** ⏸️ ~~Northflank template optional/later; pehle UI se set.~~
+   **↳ CHANGED (5 Jul 2026):** user ne UI-first ke bajaye **Northflank CLI (`@northflank/cli`
+   v0.11.7) / config-as-code** route choose kiya. CLI **spec/JSON-based** hai (`-i '<json>'`,
+   inline flags nahi). Verified schema facts: volume `storageSize` **MB** (0.5 GB = `512`);
+   volume-backed service `deployment.type: "statefulSet"`, `instances: 1`; DB restore ab
+   `northflank upload service` se (temp-URL §3b ka jhamela nahi). Runnable spec ke liye
+   3 account-specific values login ke baad chahiye: `billing.deploymentPlan` ID, project
+   region, GitHub connection.
 
 ### Implementation ka rough order (jab "implement karo" bolo)
 1. **PR-1 (code):** repo root par **slim** `Dockerfile` (python:3.12-slim, no LibreOffice,
