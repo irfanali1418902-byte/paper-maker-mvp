@@ -3,6 +3,8 @@
 .env.*
 # ...but the placeholder sample is safe and belongs in the repo
 !.env.example
+# Local launcher secrets (school PC keys) — never commit
+env.local.bat
 
 # SQLite database files (runtime state, not source)
 *.db
