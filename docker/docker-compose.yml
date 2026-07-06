@@ -1,0 +1,26 @@
+# Paper Maker — per-school deployment (Docker Compose).
+# Setup:
+#   1) cp docker/.env.example docker/.env   (aur values bharo)
+#   2) (optional) real DB: docker/data/paper_maker.db par backup rakho
+#   3) docker compose -f docker/docker-compose.yml up -d --build
+# Access: http://<server-LAN-IP>:8000
+services:
+  paper-maker:
+    build:
+      context: ..                 # repo root (app code COPY ke liye)
+      dockerfile: docker/Dockerfile
+    image: paper-maker:latest
+    container_name: paper-maker
+    ports:
+      - "${HOST_PORT:-8000}:8000"  # host:container — school apna port badal sakta hai
+    env_file:
+      - .env                       # per-school secrets/config (gitignored)
+    volumes:
+      - ./data:/data               # SQLite DB yahan persist — is folder ka backup lo
+    restart: unless-stopped        # reboot/crash par khud chalu
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/').status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

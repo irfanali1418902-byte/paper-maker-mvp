@@ -7,6 +7,9 @@
 # SQLite database files (runtime state, not source)
 *.db
 
+# Docker distribution runtime data (per-school DB volume — real data, not source)
+docker/data/
+
 # Python build/cache
 __pycache__/
 
