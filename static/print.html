@@ -52,7 +52,7 @@
   .side-actions button {
     padding: 10px 16px; border: none; border-radius: var(--radius-btn);
     cursor: pointer; font-size: 14px; font-weight: 600; font-family: inherit;
-    background: #fff; color: var(--navy);
+    background: var(--surface); color: var(--navy);
   }
   .side-actions button:hover { background: var(--tint); }
   .side-actions span { color: #C7D2E6; font-size: 13px; }
@@ -62,7 +62,7 @@
   .print-main { flex: 1; min-width: 0; padding: 24px; }
 
   .sheet {
-    max-width: 210mm; margin: 0 auto; background: #fff; padding: 14mm;
+    max-width: 210mm; margin: 0 auto; background: var(--surface); padding: 14mm;
     box-shadow: 0 8px 24px rgba(0,0,0,.12); border-radius: 6px;
   }
 
@@ -102,7 +102,7 @@
   #status { text-align: center; padding: 40px; color: var(--muted); }
 
   @media print {
-    body { background: #fff; display: block; }
+    body { background: var(--surface); display: block; }
     .app-sidebar { display: none !important; }
     .print-main { padding: 0; }
     .sheet { box-shadow: none; margin: 0; max-width: none; border-radius: 0; }
