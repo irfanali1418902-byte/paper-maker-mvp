@@ -7,18 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tokens.css">
 <style>
   @page { size: A4; margin: 14mm; }
   * { box-sizing: border-box; }
 
+  /* Print view ke apne values — shared tokens.css ko override karte hain. */
   :root {
-    --primary: #2E5AAC;
-    --primary-hover: #244a90;
-    --navy: #16294A;
-    --tint: #EAF1FB;
-    --ink: #16213A;
-    --muted: #5B6678;
-    --border: #E3E8F1;
     --bg: #F5F7FB;
     --radius-btn: 8px;
   }
@@ -57,7 +52,7 @@
   .side-actions button {
     padding: 10px 16px; border: none; border-radius: var(--radius-btn);
     cursor: pointer; font-size: 14px; font-weight: 600; font-family: inherit;
-    background: #fff; color: var(--navy);
+    background: var(--surface); color: var(--navy);
   }
   .side-actions button:hover { background: var(--tint); }
   .side-actions span { color: #C7D2E6; font-size: 13px; }
@@ -67,7 +62,7 @@
   .print-main { flex: 1; min-width: 0; padding: 24px; }
 
   .sheet {
-    max-width: 210mm; margin: 0 auto; background: #fff; padding: 14mm;
+    max-width: 210mm; margin: 0 auto; background: var(--surface); padding: 14mm;
     box-shadow: 0 8px 24px rgba(0,0,0,.12); border-radius: 6px;
   }
 
@@ -107,7 +102,7 @@
   #status { text-align: center; padding: 40px; color: var(--muted); }
 
   @media print {
-    body { background: #fff; display: block; }
+    body { background: var(--surface); display: block; }
     .app-sidebar { display: none !important; }
     .print-main { padding: 0; }
     .sheet { box-shadow: none; margin: 0; max-width: none; border-radius: 0; }
